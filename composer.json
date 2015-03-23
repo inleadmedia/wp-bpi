@@ -1,0 +1,32 @@
+{
+  "name": "bpi-plugin",
+  "type": "wordpress-plugin",
+  "description": "BPI Wordpress Plugin.",
+  "keywords": [
+    "wordpress"
+  ],
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "http://wpackagist.org"
+    },
+    {
+      "type": "git",
+      "url": "https://github.com/ding2/bpi-client"
+    }
+  ],
+  "homepage": "http://fruitware.ru",
+  "authors": [
+    {
+      "name": "Fruitware",
+      "email": "office@fruitware.ru",
+      "homepage": "http://fruitware.ru/",
+      "role": "developer"
+    }
+  ],
+  "require": {
+    "php": ">=5.3.3",
+    "fabpot/goutte": "v1.0.1",
+    "bpi/sdk": "*"
+  }
+}
