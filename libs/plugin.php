@@ -51,43 +51,55 @@ class Plugin extends Pattern_Singleton
 						"name"        => "url",
 					),
 					"content_per_page" => array(
-						"label"       => "Content per page in Sindicate",
+						"label"       => "Content per page in Sindication",
 						"type"        => "text",
-						"name"        => "url",
+						"name"        => "content_per_page",
 					)
 				)
 			)
 		);
-		$this->_initSindicationPage();
-		//		echo 'asdads';
-	}
 
-	protected function _initSindicationPage()
-	{
 		if (is_admin()) {
-			add_action('admin_menu', array($this, 'adminAddPage'));
+			add_action('admin_menu', array($this, 'addPages'));
 			add_action('current_screen', array($this, 'initTable'));
 		}
+
 		$obRole = get_role('administrator');
-		$obRole->add_cap('bpi-control');
+		$obRole->add_cap('bpi');
+
+		PostStatus::init();
 	}
 
 	/**
-	 * Callback to add page
+	 * Adds all needed pages
 	 */
-	public function adminAddPage()
+	public function addPages()
 	{
-		add_submenu_page('bpi-options','Item database', 'BPI-list', 'bpi-control', 'bpi-list', array($this, 'renderSindication'));
+		add_submenu_page('bpi-options','Syndication', 'Syndication', 'bpi', 'bpi-syndication', array($this, 'renderSyndication'));
 	}
 
 	public  function initTable()
 	{
-		$this->_table = new \Control_List_Table();
+		$this->_table = new SyndicationTable();
 	}
 
-	public function renderSindication()
+	public function renderSyndication()
 	{
-		$this->_table->prepare_items();
-		$this->_table->display();
+		if (!empty($_GET['action']))
+		{
+			if ($_GET['action'] == 'pull')
+			{
+				$bpiNodeId = $_GET['bpi-node-id'];
+				/**
+				 * Add check to confirm we have no such object which was pulled already.
+				 */
+				$postId = Pull::init()->insertPost($bpiNodeId);
+				echo 'Record added as a draft. Please <a href="'.get_admin_url(NULL,'post.php?action=edit&post='.$postId).'">check & post it</a>';
+			}
+		}
+		else {
+			$this->_table->prepare_items();
+			$this->_table->display();
+		}
 	}
 }

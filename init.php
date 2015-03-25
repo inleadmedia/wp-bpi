@@ -1,5 +1,11 @@
 <?php
 require_once 'vendor/autoload.php';
+require_once 'vendor/bpi/sdk/Bpi/Sdk/Bpi.php';
+if ( ! class_exists('WP_List_Table'))
+{
+	require_once(ABSPATH . 'wp-admin/includes/class-wp-list-table.php');
+}
+
 
 /**
  * Функция подключения файлов из директории, в том числе и рекурсивно
