@@ -59,10 +59,16 @@ class PostStatus extends Pattern_Singleton
 		/**
 		 * Apply it only on post.php page
 		 */
-		if ('post.php' != $hook) {
+		if ('post.php' == $hook) {
+			wp_enqueue_script('ajax-script', plugins_url('wp-bpi-plugin/assets/push.js'), array('jquery'));
 			return;
 		}
-		wp_enqueue_script('ajax-script', plugins_url('wp-bpi-plugin/assets/push.js'), array('jquery'));
+		if ('bpi-options_page_bpi-syndication' == $hook)
+		{
+			wp_enqueue_style('bpi-style', plugins_url('wp-bpi-plugin/assets/style.css'));
+			return;
+		}
+//		wp_enqueue_script('ajax-script', plugins_url('wp-bpi-plugin/assets/push.js'), array('jquery'));
 		//wp_localize_script( 'ajax-script', 'ajax_object', array( 'ajax_url' => admin_url( 'admin-ajax.php' ), 'we_value' => 1234 ) );
 	}
 

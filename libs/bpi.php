@@ -31,23 +31,43 @@ class Bpi extends \Fruitframe\Pattern_Singleton
 
 	/**
 	 * @todo: add try-catch
-	 *
-	 * @param int $page
+	 * @param int    $page
+	 * @param string $sort_by
+	 * @param string $sort
+	 * @param string $search
+	 * @param string $audience
+	 * @param string $category
+	 * @param string $agency_id
+	 * @param string $author
 	 *
 	 * @return \Bpi\Sdk\NodeList
 	 */
-	public function search($page = 1)
-	{
-		$offset = $page * $this->_amountPerPage;
+	public function search(
+		$page = 1,
+		$sort_by = 'pushed',
+		$sort = 'desc',
+		$search = '',
+		$audience = '',
+		$category = '',
+		$agency_id = '',
+		$author = ''
+	) {
+		$offset  = ($page-1) * $this->_amountPerPage;
+		$filters = array(
+			'category'  => $category,
+			'audience'  => $audience,
+			'agency_id' => $agency_id,
+			'author'    => $author,
+		);
 		return $this->_bpi->searchNodes(
 			array(
 				'amount' => $this->_amountPerPage,
 				'offset' => $offset,
-				'filter' => array(),
+				'filter' => $filters,
 				'sort'   => array(
-					'pushed' => 'desc',
+					$sort_by => $sort,
 				),
-				//					'search' => $query,
+				'search' => $search,
 			)
 		);
 		/**
@@ -127,6 +147,11 @@ class Bpi extends \Fruitframe\Pattern_Singleton
 		 *
 		 * return $bpi_nodes;
 		 * }*/
+	}
+
+	public function getDictionaries()
+	{
+		return $this->_bpi->getDictionaries();
 	}
 
 	public function getAmountPerPage()

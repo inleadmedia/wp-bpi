@@ -1,6 +1,8 @@
 <?php
 namespace WordpressBpi;
 
+use Fruitframe\Renderer;
+
 class SyndicationTable extends \WP_List_Table
 {
 	protected $_column_headers;
@@ -29,12 +31,88 @@ class SyndicationTable extends \WP_List_Table
 		$this->_column_headers = array($this->get_columns(), array(), $sortable);
 	}
 
-	public function extra_tablenav($which)
+	protected function _getPaged()
 	{
+		return max(1, intval(@$_GET["paged"]));
+	}
+
+	protected function _buildUrl($param, $value = null, $param2 = null, $value2 = null)
+	{
+		$params = array(
+			'filter-category'  => sanitize_text_field(@$_GET['filter-category']),
+			'filter-audience'  => sanitize_text_field(@$_GET['filter-audience']),
+			'filter-search'    => sanitize_text_field(@$_GET['filter-search']),
+			'filter-agency-id' => sanitize_text_field(@$_GET['filter-agency-id']),
+			'filter-agency'    => sanitize_text_field(@$_GET['filter-agency']),
+			'filter-author'    => sanitize_text_field(@$_GET['filter-author']),
+			'page'             => 'bpi-syndication',
+		);
+		if ( ! empty($param) && array_key_exists($param, $params)) {
+			if ( ! $value) {
+				unset($params[$param]);
+			} else {
+				$params[$param] = $value;
+			}
+		}
+		if ( ! empty($param2) && array_key_exists($param2, $params)) {
+			if ( ! $value2) {
+				unset($params[$param2]);
+			} else {
+				$params[$param2] = $value2;
+			}
+		}
+
+		return admin_url('admin.php?') . build_query($params);
+	}
+
+	public
+	function extra_tablenav(
+		$which
+	) {
 		if ('top' == $which) {
-			$filterDateStart = @$_REQUEST['stat_date_start'];
-			$filterDateEnd   = @$_REQUEST['stat_date_end'];
 			echo '<h2>BPI Library</h2>';
+			$dictionaries = Bpi::init()->getDictionaries();
+
+			$selectedAuthor     = sanitize_text_field(@$_GET['filter-author']);
+			$selectedAgency     = sanitize_text_field(@$_GET['filter-agency-id']);
+			$selectedAgencyName = sanitize_text_field(@$_GET['filter-agency']);
+			$selectedAudience   = sanitize_text_field(@$_GET['filter-audience']);
+			$selectedCategory   = sanitize_text_field(@$_GET['filter-category']);
+			$searchText         = sanitize_text_field(@$_GET['filter-search']);
+
+			$links = array();
+
+			if ($selectedAuthor) {
+				$links[] = array(
+					'link'  => $this->_buildUrl('filter-author'),
+					'param' => 'Author',
+					'value' => $selectedAuthor,
+				);
+			}
+			if ($selectedAgency) {
+				$links[] = array(
+					'link'  => $this->_buildUrl('filter-agency-id', null, 'filter-agency', null),
+					'param' => 'Agency',
+					'value' => $selectedAgencyName,
+
+				);
+			}
+
+			echo Renderer::render_template('filters', array(
+				'categories'       => $dictionaries['category'],
+				'audience'         => $dictionaries['audience'],
+				'selectedAudience' => $selectedAudience,
+				'selectedCategory' => $selectedCategory,
+				'searchText'       => $searchText,
+				'links'            => $links,
+				'additionalParams' => array(
+					'page'             => 'bpi-syndication',
+					'filter-agency-id' => $selectedAgency,
+					'filter-agency'    => $selectedAgencyName,
+					'filter-author'    => $selectedAuthor,
+				)
+
+			));
 			/*echo '<div class="statistics" style="text-align:left;padding-bottom: 10px">
 				<table>
 					<tr><th colspan="2"><div class="h3">Статистика по публикациям</div></th></tr>
@@ -56,97 +134,71 @@ class SyndicationTable extends \WP_List_Table
 		} elseif ($which == 'bottom') {
 			//			echo '<a href="' . admin_url('admin.php?page=printweek_control&section=xls') . '" id="generate-xsl" style="float: left" class="button-secondary">Сгенерировать XSL</a>';
 		}
-		return;
+
 		?>
-		<div class="alignleft actions">
-			<?php
-			$dropdown_options = array(
-				'selected'        => $cat_id,
-				'name'            => 'cat_id',
-				'taxonomy'        => 'link_category',
-				'show_option_all' => __('View all categories'),
-				'hide_empty'      => true,
-				'hierarchical'    => 1,
-				'show_count'      => 0,
-				'orderby'         => 'name',
-			);
-			wp_dropdown_categories($dropdown_options);
-			submit_button(__('Filter'), 'secondary', false, false, array('id' => 'post-query-submit'));
-			?>
-		</div>
 	<?php
 	}
 
-	public function get_columns()
+	public
+	function get_columns()
 	{
 		return array(
-			'title'     => 'Title',
-			'teaser'    => 'Teaser',
-			'author'    => 'Author',
-			'agency_id' => 'Agency',
-			'category'  => 'Category',
-			'audience'  => 'Audience',
-			'_actions'  => 'Actions'
+			'title'       => 'Title',
+			'pushed'      => 'Date',
+			'agency_name' => 'Agency',
+			'category'    => 'Category',
+			'_details'    => 'Details',
+			'_actions'    => 'Actions'
 		);
 	}
 
-	public function get_sortable_columns()
+	public
+	function get_sortable_columns()
 	{
-		return array();
-		$columns = $this->get_columns();
-		array_pop($columns);
-		foreach ($columns as $key => $column) {
-			$columns[$key] = $key;
-		}
-		//		var_dump();die;
-		return $columns;
+		return array(
+			'title'  => 'title',
+			'pushed' => 'pushed'
+		);
 	}
 
 	/**
 	 * Prepare the table with different parameters, pagination, columns and table elements
 	 */
-	public function prepare_items()
+	public
+	function prepare_items()
 	{
 		global $_wp_column_headers;
-		global $wpdb;
 		$screen = get_current_screen();
 
-		/*		$filterDateStart = @$_REQUEST['stat_date_start'];
-				$filterDateEnd   = @$_REQUEST['stat_date_end'];
-				$dateWhere       = '';
-				if ($filterDateStart) {
-					$dateWhere .= " AND  DATE(post_date) >= '" . date('Y-m-d', strtotime($filterDateStart)) . "'";
-				}
-				if ($filterDateEnd) {
-					$dateWhere .= " AND  DATE(post_date) < '" . date('Y-m-d', strtotime($filterDateEnd)) . "'";
-				}*/
-
 		//Parameters that are going to be used to order the result
-		$orderby = ! empty($_GET["orderby"]) ? sanitize_text_field($_GET["orderby"]) : 'ID';
-		$order   = ! empty($_GET["order"]) ? sanitize_text_field($_GET["order"]) : 'ASC';
+		$orderby = ! empty($_GET["orderby"]) ? sanitize_text_field($_GET["orderby"]) : 'pushed';
+		$order   = ! empty($_GET["order"]) ? sanitize_text_field($_GET["order"]) : 'desc';
+
+		//Which page is this?
+		$paged = $this->_getPaged();
+
+
+		$selectedAudience = sanitize_text_field(@$_GET['filter-audience']);
+		$selectedCategory = sanitize_text_field(@$_GET['filter-category']);
+		$searchText       = sanitize_text_field(@$_GET['filter-search']);
+		$selectedAuthor   = sanitize_text_field(@$_GET['filter-author']);
+		$selectedAgency   = sanitize_text_field(@$_GET['filter-agency-id']);
+
+		$bpiResponse = Bpi::init()->search($paged, $orderby, $order, $searchText, $selectedAudience,
+			$selectedCategory,
+			$selectedAgency, $selectedAuthor);
+		$this->items = $bpiResponse;
+
+
 		/* -- Pagination parameters -- */
-		//Number of elements in your table?
-		//		$where      = " WHERE post_type IN ('analytics','blogs','magazine','post','green_bag','news_from_the_field') AND post_status = 'publish' $dateWhere ORDER BY ";
-		//		$query      = 'SELECT COUNT(*) FROM ' . $wpdb->posts . $where . $orderby . ' ' . $order;
-		$totalitems = 100;/*$wpdb->get_var($query)*/;
+		$totalitems = $bpiResponse->total;
 
 		//How many to display per page?
 		$perpage = Bpi::init()->getAmountPerPage();
-		//Which page is this?
-		$paged = max(1, intval(@$_GET["paged"]));
 
-		//Page Number
-		if (empty($paged) || ! is_numeric($paged) || $paged <= 0) {
-			$paged = 1;
-		}
 		//How many pages do we have in total?
 		$totalpages = ceil($totalitems / $perpage);
 		//adjust the query to take pagination into account
-		$limit = '';
-		if ( ! empty($paged) && ! empty($perpage)) {
-			$offset = ($paged - 1) * $perpage;
-			$limit  = ' LIMIT ' . (int) $offset . ',' . (int) $perpage;
-		}
 
 		/* -- Register the pagination -- */
 		$this->set_pagination_args(array(
@@ -154,75 +206,82 @@ class SyndicationTable extends \WP_List_Table
 			"total_pages" => $totalpages,
 			"per_page"    => $perpage,
 		));
-		//The pagination links are automatically built according to those parameters
 
 		/* -- Register the Columns -- */
-		$columns                         = $this->get_columns();
-		$_wp_column_headers[$screen->id] = $columns;
-
-		$orderby = $orderby ? $orderby : 'ID';
-		/*		foreach ($bpi_data as $node) {
-					var_dump($node);die;
-				}*/
-
-		$this->items = Bpi::init()->search($paged);
+		$_wp_column_headers[$screen->id] = $this->get_columns();
 	}
 
 	/**
 	 * Display the rows of records in the table
 	 * @return string, echo the markup of the rows
 	 */
-	public function display_rows()
+	public
+	function display_rows()
 	{
-		//Get the records registered in the prepare_items method
 		$nodesList = $this->items;
-		//Get the columns registered in the get_columns and get_sortable_columns methods
 		list($columns, $hidden) = $this->get_column_info();
-
-		//Loop for each record
-		if ( ! empty($nodesList)) {
+		if ($nodesList->count()) {
 			foreach ($nodesList as $node) {
-				//Open the line
 				$properties = $node->getProperties();
+				$assets     = $node->getAssets();
+				//				var_dump(count($assets));
 				echo '<tr id="record_' . $properties['id'] . '">';
 				foreach ($columns as $column_name => $column_display_name) {
 					if ( ! $column_name) {
 						continue;
 					}
 
-					//Style attributes for each col
-					$class = "class='$column_name column-$column_name'";
-					$style = "";
-					if (in_array($column_name, $hidden)) {
-						$style = ' style="display:none;"';
-					}
-					$attributes = $class . $style;
 					switch ($column_name) {
+						case 'pushed':
+							$value = date('Y-m-d H:i', strtotime($properties['pushed']));
+							break;
+						case 'title':
+
+							$value = '<strong>' . $properties['title'] . '</strong>';
+							if ( ! empty($properties['teaser']) && $properties['title'] != $properties['teaser']) {
+								$value .= '<br/>' . $properties['teaser'];
+							}
+							break;
 						case '_actions':
 							if (count($results = get_posts(array(
-								'meta_key'   => 'bpi_id',
-								'meta_value' => $properties['id'],
+								'meta_key'    => 'bpi_id',
+								'meta_value'  => $properties['id'],
 								'post_status' => 'any'
 							)))) {
-								$value = 'Already pulled. <a href="'.get_admin_url(NULL,'post.php?action=edit&post='.$results[0]->ID).'">Check</a>';
+								$value = 'Already pulled. <a href="' . get_admin_url(null,
+										'post.php?action=edit&post=' . $results[0]->ID) . '">Check</a>';
 							} else {
 								$value = '
-							<a href="' . get_admin_url(null,
-										'admin.php?page=bpi-syndication&action=pull&bpi-node-id=' . $properties['id']) . '">Pull</a>
+							<a href="' . admin_url('admin.php?page=bpi-syndication&action=pull&bpi-node-id=' . $properties['id']) . '">Pull</a>
 							';
 							}
 							break;
-						case 'agency_id':
-							$value = $properties['agency_name'];
+						case '_details':
+							$value =
+								'Author: <a href="' . $this->_buildUrl('filter-author',
+									$properties['author']) . '">' . $properties['author'] . '</a><br/>' .
+								'Audience: <strong>' . $properties['audience'] . '</strong><br/>' .
+								'Editable: <strong>' . ($properties['editable'] ? 'Yes' : 'No') . '</strong><br/>' .
+								'With photos: <strong>' . (count($assets) ? 'Yes' : 'No') . '</strong><br/>';
+							break;
+						case 'agency_name':
+							$value = '<a href="' . $this->_buildUrl('filter-agency-id',
+									$properties['agency_id'], 'filter-agency',
+									$properties['agency_name']) . '">' . $properties['agency_name'] . '</a>';
 							break;
 						default:
 							$value = stripslashes($properties[$column_name]);
 							break;
 					}
-					echo '<td ' . $attributes . '>' . $value . '</td>';
+					echo '<td class="' . $column_name . ' column-' . $column_name . '"' . (in_array($column_name,
+							$hidden) ? ' style="display:none;" ' : '') . '>' . $value . '</td>';
 				}
 				echo '</tr>';
 			}
+		} else {
+			echo '<tr class="no-items"><td class="colspanchange" colspan="' . $this->get_column_count() . '">';
+			$this->no_items();
+			echo '</td></tr>';
 		}
 	}
 }

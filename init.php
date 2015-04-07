@@ -1,4 +1,7 @@
 <?php
+
+define('FRUITFRAME_TEMPLATES', plugin_dir_path(__FILE__).'templates/');
+
 require_once 'vendor/autoload.php';
 require_once 'vendor/bpi/sdk/Bpi/Sdk/Bpi.php';
 if ( ! class_exists('WP_List_Table'))
