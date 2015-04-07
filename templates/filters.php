@@ -1,9 +1,5 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: keriat
- * Date: 4/4/15
- * Time: 5:12 PM
  * @var $categories
  * @var $audience
  * @var $selectedAudience
@@ -40,7 +36,6 @@
 		<p class="search-box bpi-style">
 			<label class="screen-reader-text" for="post-search-input">Search:</label>
 			<input type="search" id="post-search-input" name="filter-search" value="<?php echo $searchText ?>">
-			<!--			<input type="submit" name="" id="search-submit" class="button" value="Search Posts">-->
 		</p>
 
 		<?php

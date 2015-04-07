@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: keriat
- * Date: 3/25/15
- * Time: 8:17 AM
- */
 namespace WordpressBpi;
 
 class Pull extends \Fruitframe\Pattern_Singleton

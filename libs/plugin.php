@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: keriat
- * Date: 3/21/15
- * Time: 8:01 PM
- */
-
 namespace WordpressBpi;
 
 use Fruitframe\Pattern_Singleton;
