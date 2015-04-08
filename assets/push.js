@@ -1,6 +1,3 @@
-/**
- * Created by keriat on 3/25/15.
- */
 jQuery(function($){
 	var $pushToBpiButton = $('#push-to-bpi');
 	var pushToBpi = function () {
@@ -20,5 +17,5 @@ jQuery(function($){
 	};
 	$pushToBpiButton.click(function(){
 		pushToBpi();
-	})
+	});
 });

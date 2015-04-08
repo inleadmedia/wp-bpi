@@ -9,12 +9,12 @@ class SyndicationTable extends \WP_List_Table
 
 	public function __construct()
 	{
-
 		parent::__construct(array(
 			'singular' => 'wp_list_text_link_control', //Singular label
 			'plural'   => 'wp_list_test_links_control', //plural label, also this well be one of the table css class
 			'ajax'     => false //We won't support Ajax for this table
 		));
+
 		$sortable = array();
 		foreach ($this->get_sortable_columns() as $id => $data) {
 			if (empty($data)) {
@@ -65,12 +65,10 @@ class SyndicationTable extends \WP_List_Table
 		return admin_url('admin.php?') . build_query($params);
 	}
 
-	public
-	function extra_tablenav(
-		$which
-	) {
+	public function extra_tablenav($which)
+	{
 		if ('top' == $which) {
-			echo '<h2>BPI Library</h2>';
+
 			$dictionaries = Bpi::init()->getDictionaries();
 
 			$selectedAuthor     = sanitize_text_field(@$_GET['filter-author']);
@@ -113,30 +111,7 @@ class SyndicationTable extends \WP_List_Table
 				)
 
 			));
-			/*echo '<div class="statistics" style="text-align:left;padding-bottom: 10px">
-				<table>
-					<tr><th colspan="2"><div class="h3">Статистика по публикациям</div></th></tr>
-					<tr>
-						<td colspan="2">
-							<div class="alignleft actions">
-								<form action="http://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"] . '"  method="get">
-								<input type="hidden" name="paged" value="' . max(1, @$_GET['paged']) . '"/>
-								<input type="hidden" name="page" value="printweek_control"/>
-								Даты от: <input type="text" name="stat_date_start" class="datepicker-init" value="' . $filterDateStart . '"/>
-								до: <input type="text" name="stat_date_end" class="datepicker-init" value="' . $filterDateEnd . '"/>
-								<input type="submit" name="" id="post-query-submit" class="button-secondary" value="Фильтр">
-								</form>
-							</div>
-						</td>
-					</tr>
-				</table>
-			</div>';*/
-		} elseif ($which == 'bottom') {
-			//			echo '<a href="' . admin_url('admin.php?page=printweek_control&section=xls') . '" id="generate-xsl" style="float: left" class="button-secondary">Сгенерировать XSL</a>';
 		}
-
-		?>
-	<?php
 	}
 
 	public
@@ -215,73 +190,67 @@ class SyndicationTable extends \WP_List_Table
 	 * Display the rows of records in the table
 	 * @return string, echo the markup of the rows
 	 */
-	public
-	function display_rows()
+	public function display_rows()
 	{
 		$nodesList = $this->items;
 		list($columns, $hidden) = $this->get_column_info();
-		if ($nodesList->count()) {
-			foreach ($nodesList as $node) {
-				$properties = $node->getProperties();
-				$assets     = $node->getAssets();
-				//				var_dump(count($assets));
-				echo '<tr id="record_' . $properties['id'] . '">';
-				foreach ($columns as $column_name => $column_display_name) {
-					if ( ! $column_name) {
-						continue;
-					}
 
-					switch ($column_name) {
-						case 'pushed':
-							$value = date('Y-m-d H:i', strtotime($properties['pushed']));
-							break;
-						case 'title':
-
-							$value = '<strong>' . $properties['title'] . '</strong>';
-							if ( ! empty($properties['teaser']) && $properties['title'] != $properties['teaser']) {
-								$value .= '<br/>' . $properties['teaser'];
-							}
-							break;
-						case '_actions':
-							if (count($results = get_posts(array(
-								'meta_key'    => 'bpi_id',
-								'meta_value'  => $properties['id'],
-								'post_status' => 'any'
-							)))) {
-								$value = 'Already pulled. <a href="' . get_admin_url(null,
-										'post.php?action=edit&post=' . $results[0]->ID) . '">Check</a>';
-							} else {
-								$value = '
-							<a href="' . admin_url('admin.php?page=bpi-syndication&action=pull&bpi-node-id=' . $properties['id']) . '">Pull</a>
-							';
-							}
-							break;
-						case '_details':
-							$value =
-								'Author: <a href="' . $this->_buildUrl('filter-author',
-									$properties['author']) . '">' . $properties['author'] . '</a><br/>' .
-								'Audience: <strong>' . $properties['audience'] . '</strong><br/>' .
-								'Editable: <strong>' . ($properties['editable'] ? 'Yes' : 'No') . '</strong><br/>' .
-								'With photos: <strong>' . (count($assets) ? 'Yes' : 'No') . '</strong><br/>';
-							break;
-						case 'agency_name':
-							$value = '<a href="' . $this->_buildUrl('filter-agency-id',
-									$properties['agency_id'], 'filter-agency',
-									$properties['agency_name']) . '">' . $properties['agency_name'] . '</a>';
-							break;
-						default:
-							$value = stripslashes($properties[$column_name]);
-							break;
-					}
-					echo '<td class="' . $column_name . ' column-' . $column_name . '"' . (in_array($column_name,
-							$hidden) ? ' style="display:none;" ' : '') . '>' . $value . '</td>';
-				}
-				echo '</tr>';
-			}
-		} else {
+		if ( ! $nodesList->count()) {
 			echo '<tr class="no-items"><td class="colspanchange" colspan="' . $this->get_column_count() . '">';
+
 			$this->no_items();
 			echo '</td></tr>';
+
+		}
+		foreach ($nodesList as $node) {
+			$properties = $node->getProperties();
+			$assets     = $node->getAssets();
+
+			echo '<tr id="record_' . $properties['id'] . '">';
+			foreach ($columns as $column_name => $column_display_name) {
+				if ( ! $column_name) {
+					continue;
+				}
+
+				switch ($column_name) {
+					case 'pushed':
+						$value = date('Y-m-d H:i', strtotime($properties['pushed']));
+						break;
+					case 'title':
+
+						$value = '<strong>' . $properties['title'] . '</strong>';
+						if ( ! empty($properties['teaser']) && $properties['title'] != $properties['teaser']) {
+							$value .= '<br/>' . $properties['teaser'];
+						}
+						break;
+					case '_actions':
+						$value = ($postStatus = PostStatus::findByBpiId($properties['id'])) ?
+							'Already pulled. <a href="' . get_admin_url(null,
+								'post.php?action=edit&post=' . $postStatus->getPostObject()->ID) . '">Check</a>' :
+							'<a href="javascript:void(0);" data-node-id="' . $properties['id'] . '" class="pull_from_bpi">Pull</a>';
+						break;
+					case
+					'_details':
+						$value =
+							'Author: <a href="' . $this->_buildUrl('filter-author',
+								$properties['author']) . '">' . $properties['author'] . '</a><br/>' .
+							'Audience: <strong>' . $properties['audience'] . '</strong><br/>' .
+							'Editable: <strong>' . ($properties['editable'] ? 'Yes' : 'No') . '</strong><br/>' .
+							'With photos: <strong>' . (count($assets) ? 'Yes' : 'No') . '</strong><br/>';
+						break;
+					case 'agency_name':
+						$value = '<a href="' . $this->_buildUrl('filter-agency-id',
+								$properties['agency_id'], 'filter-agency',
+								$properties['agency_name']) . '">' . $properties['agency_name'] . '</a>';
+						break;
+					default:
+						$value = stripslashes($properties[$column_name]);
+						break;
+				}
+				echo '<td class="' . $column_name . ' column-' . $column_name . '"' . (in_array($column_name,
+						$hidden) ? ' style="display:none;" ' : '') . '>' . $value . '</td>';
+			}
+			echo '</tr>';
 		}
 	}
 }

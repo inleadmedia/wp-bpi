@@ -1,86 +1,154 @@
 <?php
 namespace WordpressBpi;
 
-use Fruitframe\Pattern_Singleton;
-use Fruitframe\AddMetaBox;
-
-class PostStatus extends Pattern_Singleton
+/**
+ * Using Singleton Pattern for the list of posts
+ * Helper-class to extend Wordpress Post with all bpi-staff.
+ *
+ * Class PostStatus
+ * @package WordpressBpi
+ */
+class PostStatus
 {
-	protected function __construct()
+	static $_posts = array();
+
+	protected $_postId;
+	protected $_postData;
+
+	/**
+	 * @param $postId
+	 *
+	 * @throws \Exception
+	 */
+	protected function __construct($postId)
 	{
-
-		AddMetaBox::create('bpi', array(
-			'bpi'           => array(
-				'label'   => 'Status',
-				'type'    => 'custom',
-				'default' => 0,
-				'handler' => array(
-					$this,
-					'renderBpiStatus'
-				),
-			),
-			'bpi_id'        => array(
-				'label'   => 'Item ID',
-				'type'    => 'view',
-				'default' => 'None'
-			),
-			'bpi_timestamp' => array(
-				'label'   => 'Import Date',
-				'type'    => 'custom',
-				'handler' => array(
-					$this,
-					'renderBpiDate'
-				),
-			),
-			'custom'        => array(
-				'label'   => 'Export',
-				'type'    => 'custom',
-				'handler' => array(
-					$this,
-					'renderPush'
-				),
-			)
-		), 'post', 'BPI info', 'side');
-
-		add_action('wp_ajax_push_to_bpi', array($this, 'pushToBpi'));
-
-		add_action('admin_enqueue_scripts', array($this, 'scriptsEnqueue'));
+		if ( ! ($this->_postData = get_post($postId))) {
+			throw new \Exception('No post with ID=' . $postId . ' found');
+		}
+		$this->_postId = $postId;
 	}
 
-	public function scriptsEnqueue($hook)
+	/**
+	 * @param $postId
+	 * @throws \Exception
+	 *
+	 * @return PostStatus
+	 */
+	public static function init($postId)
 	{
-		/**
-		 * Apply it only on post.php page
-		 */
-		if ('post.php' == $hook) {
-			wp_enqueue_script('ajax-script', plugins_url('wp-bpi-plugin/assets/push.js'), array('jquery'));
-			return;
+		if ( ! array_key_exists($postId, self::$_posts)) {
+			self::$_posts[$postId] = new self($postId);
 		}
-		if ('bpi-options_page_bpi-syndication' == $hook)
-		{
-			wp_enqueue_style('bpi-style', plugins_url('wp-bpi-plugin/assets/style.css'));
-			return;
+		return self::$_posts[$postId];
+	}
+
+	/**
+	 * @param $bpiId
+	 * @throws \Exception
+	 *
+	 * @return bool|PostStatus
+	 */
+	public static function findByBpiId($bpiId)
+	{
+		if (count($results = get_posts(array(
+			'meta_key'    => 'bpi_id',
+			'meta_value'  => $bpiId,
+			'post_status' => 'any'
+		)))) {
+			return self::init($results[0]->ID);
 		}
-//		wp_enqueue_script('ajax-script', plugins_url('wp-bpi-plugin/assets/push.js'), array('jquery'));
-		//wp_localize_script( 'ajax-script', 'ajax_object', array( 'ajax_url' => admin_url( 'admin-ajax.php' ), 'we_value' => 1234 ) );
+		return false;
+	}
+
+	/**
+	 * For syndication
+	 */
+	public function getTableState()
+	{
+		if ($this->getBpiStatus()) {
+			return 'Already pulled. <a href="' . get_admin_url(null,
+				'post.php?action=edit&post=' . $this->_postId). '">Check</a>';
+		}
+		return '';
+	}
+
+	/**
+	 * @return null|\WP_Post
+	 */
+	public function getPostObject()
+	{
+		return $this->_postData;
+	}
+
+	public function renderPush()
+	{
+		if (empty($_GET['post'])) {
+			return 'Cant\'t push new post';
+		}
+		$postId = intval($_GET['post']);
+		if (get_post_meta($postId, 'bpi_push_status', true)) {
+			$date = get_post_meta($postId, 'bpi_timestamp', true);
+			return 'Pushed at ' . date('d.m.Y H:i', $date);
+		}
+		return '<a href="javascript:void(0);" id="push-to-bpi" data-post-id="' . $postId . '">Push to BPI</a>';
+	}
+
+	public function renderBpiStatus()
+	{
+		if ( ! empty($_GET['post'])) {
+			$postId = intval($_GET['post']);
+			if (get_post_meta($postId, 'bpi_push_status', true)) {
+				return 'Pushed to BPI';
+			}
+			if (get_post_meta($postId, 'bpi', true)) {
+				return 'Imported from BPI';
+			}
+		}
+		return 'Not in BPI yet';
+	}
+
+	public function renderBpiDate()
+	{
+		if ( ! empty($_GET['post'])) {
+			$postId = intval($_GET['post']);
+			if ($timestamp = get_post_meta($postId, 'bpi_timestamp', true)) {
+				return date('d.m.Y H:i', $timestamp);
+			}
+		}
+		return ' None';
+	}
+
+	public function getBpiStatus()
+	{
+		if (get_post_meta($this->_postId, 'bpi_push_status', true) || get_post_meta($this->_postId, 'bpi', true)) {
+			return true;
+		}
+		return false;
+	}
+
+	public function getBpiDate(
+		$format = false
+	) {
+		if ( ! ($date = get_post_meta($this->_postId, 'bpi_timestamp', true))) {
+			return false;
+		}
+		return $format ? date($format, $date) : $date;
 	}
 
 	/**
 	 * Convert node object to array structure, suitable for pushing to the well.
 	 *
-	 * @param stdClass $node
-	 *   Node object being processed.
-	 * @param string   $category
+	 * @param string $category
 	 *   Selected category at the BPI side.
-	 * @param string   $audience
+	 * @param string $audience
 	 *   Selected audience at the BPI side.
-	 * @param bool     $with_images
+	 * @param bool   $with_images
 	 *   Include images or not.
-	 * @param bool     $authorship
+	 * @param bool   $authorship
 	 *   Include author name or not.
-	 * @param int      $editable
+	 * @param int    $editable
 	 *   1 - to mark as editable, 0 - not editable.
-	 * @param bool     $with_refs
+	 * @param bool   $with_refs
 	 *   If TRUE ting material reference are extracted.
 	 *
 	 * @return array
@@ -89,26 +157,18 @@ class PostStatus extends Pattern_Singleton
 	 * @todo Add a hook allowing changing the values before they are sent to BPI.
 	 * @todo Split this function into smaller parts (ex: images, texts).
 	 */
-	protected function _convertWordpressPostToBpiNode(
-		$wpPost,
-		$category,
-		$audience,
-		$with_images = false,
-		$authorship = false,
-		$editable = 1,
-		$with_refs = false
-	) {
+	public function prepareToBpi($category, $audience, $with_images = false, $authorship = false, $editable = 1, $with_refs = false) {
 		$bpi_content = array();
 
 		$bpi_content['agency_id'] = \wpJediOptions::get_option('bpi_options', 'agency_id');
-		$bpi_content['local_id']  = $wpPost->ID;
-		$bpi_content['bpi_id']    = get_post_meta($wpPost->ID, 'bpi_id', true);
+		$bpi_content['local_id']  = $this->_postId;
+		$bpi_content['bpi_id']    = get_post_meta($this->_postId, 'bpi_id', true);
 
-		$user                     = get_user_by('id', $wpPost->post_author);
+		$user                     = get_user_by('id', $this->_postData->post_author);
 		$bpi_content['firstname'] = $user->display_name;
 		$bpi_content['lastname']  = '';
 
-		$bpi_content['title'] = $wpPost->post_title;
+		$bpi_content['title'] = $this->_postData->post_title;
 
 
 		/*		$teaser_field = $wpPost->post_excerpt;
@@ -147,7 +207,7 @@ class PostStatus extends Pattern_Singleton
 		/*		if ( ! empty($body_field) && isset($body_field['#items'][0]['safe_value'])) {
 					$body = $body_field['#items'][0]['safe_value'];
 				}*/
-		$teaser = $body = apply_filters('the_content', $wpPost->post_content);
+		$teaser = $body = apply_filters('the_content', $this->_postData->post_content);
 
 		// Empty the teaser, if body and teaser are mapped to same fields
 		// and the values are identical.
@@ -158,7 +218,7 @@ class PostStatus extends Pattern_Singleton
 		$bpi_content['body']   = html_entity_decode($body);
 		$bpi_content['teaser'] = html_entity_decode($teaser);
 		$dt                    = new \DateTime();
-		$dt->setTimestamp(strtotime($wpPost->post_date));
+		$dt->setTimestamp(strtotime($this->_postData->post_date));
 		$bpi_content['creation']          = $dt->format(\DateTime::W3C);
 		$bpi_content['type']              = 'post';
 		$bpi_content['category']          = $category;
@@ -197,73 +257,5 @@ class PostStatus extends Pattern_Singleton
 		}
 
 		return $bpi_content;
-	}
-
-
-	public function pushToBpi()
-	{
-		try {
-			if (empty($_REQUEST['post_id'])) {
-				throw new \Exception('No post ID given');
-			}
-			//			var_dump()
-			if ( ! is_object($wpPost = get_post($_REQUEST['post_id']))) {
-				throw new \Exception('No post with ID=' . $_REQUEST['post_id'] . ' found');
-			}
-			$bpiNode = $this->_convertWordpressPostToBpiNode($wpPost, 'Review', 'All');
-			Bpi::init()->pushNode($bpiNode);
-			$date = get_post_meta($_REQUEST['post_id'], 'bpi_timestamp', true);
-
-
-			echo json_encode(array(
-				'state' => 1,
-				'text'  => 'Pushed at ' . date('d.m.Y H:i', $date),
-			));
-
-		} catch ( \Exception $e ) {
-			echo json_encode(array(
-				'state'   => 0,
-				'message' => $e->getMessage()
-			));
-		}
-		wp_die();
-	}
-
-	public function renderPush()
-	{
-		if (empty($_GET['post'])) {
-			return 'Cant\'t push new post';
-		}
-		$postId = intval($_GET['post']);
-		if (get_post_meta($postId, 'bpi_push_status', true)) {
-			$date = get_post_meta($postId, 'bpi_timestamp', true);
-			return 'Pushed at ' . date('d.m.Y H:i', $date);
-		}
-		return '<a href="javascript:void(0);" id="push-to-bpi" data-post-id="' . $postId . '">Push to BPI</a>';
-	}
-
-	public function renderBpiStatus()
-	{
-		if ( ! empty($_GET['post'])) {
-			$postId = intval($_GET['post']);
-			if (get_post_meta($postId, 'bpi_push_status', true)) {
-				return 'Pushed to BPI';
-			}
-			if (get_post_meta($postId, 'bpi', true)) {
-				return 'Imported from BPI';
-			}
-		}
-		return 'Not in BPI yet';
-	}
-
-	public function renderBpiDate()
-	{
-		if ( ! empty($_GET['post'])) {
-			$postId = intval($_GET['post']);
-			if ($timestamp = get_post_meta($postId, 'bpi_timestamp', true)) {
-				return date('d.m.Y H:i', $timestamp );
-			}
-		}
-		return ' None';
 	}
 }

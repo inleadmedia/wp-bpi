@@ -9,6 +9,7 @@
  * @var $additionalParams
  */
 ?>
+<h2>BPI Library</h2>
 <div class="alignleft actions">
 	<form>
 		<?php foreach ($additionalParams as $paramName => $paramValue): ?>
