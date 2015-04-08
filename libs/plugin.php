@@ -56,13 +56,13 @@ class Plugin extends Pattern_Singleton
 
 		//$postStatus = new PostStatus();
 
-		/*AddMetaBox::create('bpi', array(
+		AddMetaBox::create('bpi', array(
 			'bpi'           => array(
 				'label'   => 'Status',
 				'type'    => 'custom',
 				'default' => 0,
 				'handler' => array(
-					$postStatus,
+					$this,
 					'renderBpiStatus'
 				),
 			),
@@ -75,7 +75,7 @@ class Plugin extends Pattern_Singleton
 				'label'   => 'Import Date',
 				'type'    => 'custom',
 				'handler' => array(
-					$postStatus,
+					$this,
 					'renderBpiDate'
 				),
 			),
@@ -83,11 +83,11 @@ class Plugin extends Pattern_Singleton
 				'label'   => 'Export',
 				'type'    => 'custom',
 				'handler' => array(
-					$postStatus,
+					$this,
 					'renderPush'
 				),
 			)
-		), 'post', 'BPI info', 'side');*/
+		), 'post', 'BPI info', 'side');
 
 		if (is_admin()) {
 			add_action('admin_menu', array($this, 'addPages'));
@@ -99,11 +99,64 @@ class Plugin extends Pattern_Singleton
 
 			add_action('wp_ajax_pull_from_bpi', array($this, 'ajaxPullAction'));
 			add_action('wp_ajax_check_pull_from_bpi', array($this, 'ajaxCheckPullAction'));
+			add_action('wp_ajax_check_push_to_bpi', array($this, 'ajaxCheckPushAction'));
 			add_action('wp_ajax_push_to_bpi', array($this, 'ajaxPushAction'));
+
+			add_action('add_meta_boxes', array($this, 'addMeta'));
 		}
 
 		$obRole = get_role('administrator');
 		$obRole->add_cap('bpi');
+	}
+
+	public function addMeta()
+	{
+		add_meta_box('bpi', 'BPI status', array($this, 'renderMeta'), 'post', 'side');
+	}
+
+	public function renderMeta()
+	{
+		echo Renderer::render_template('meta', array(
+			'params' => PostStatus::init($GLOBALS['post']->ID)->getMetaParams(),
+		));
+	}
+
+	public function renderPush()
+	{
+		if (empty($_GET['post'])) {
+			return 'Cant\'t push new post';
+		}
+		$postId = intval($_GET['post']);
+		if (get_post_meta($postId, 'bpi_push_status', true)) {
+			$date = get_post_meta($postId, 'bpi_timestamp', true);
+			return 'Pushed at ' . date('d.m.Y H:i', $date);
+		}
+		return '<a href="javascript:void(0);" id="push-to-bpi" data-post-id="' . $postId . '">Push to BPI</a>';
+	}
+
+	public function renderBpiStatus()
+	{
+		if ( ! empty($_GET['post'])) {
+			$postId = intval($_GET['post']);
+			if (get_post_meta($postId, 'bpi_push_status', true)) {
+				return 'Pushed to BPI';
+			}
+			if (get_post_meta($postId, 'bpi', true)) {
+				return 'Imported from BPI';
+			}
+		}
+		return 'Not in BPI yet';
+	}
+
+	public function renderBpiDate()
+	{
+		if ( ! empty($_GET['post'])) {
+			$postId = intval($_GET['post']);
+			if ($timestamp = get_post_meta($postId, 'bpi_timestamp', true)) {
+				return date('d.m.Y H:i', $timestamp);
+			}
+		}
+		return ' None';
 	}
 
 	public function addColumnHead($defaults)
@@ -145,19 +198,14 @@ class Plugin extends Pattern_Singleton
 
 	public function scriptsEnqueue($hook)
 	{
-		wp_enqueue_script('popup-script', plugins_url('wp-bpi-plugin/assets/popup.js'), array('jquery-ui-dialog'));
+		wp_enqueue_script('bpi-script', plugins_url('wp-bpi-plugin/assets/script.js'), array('jquery-ui-dialog'));
+		wp_enqueue_style('wp-jquery-ui-dialog');
 
 		/**
 		 * Apply it only on post.php page
 		 */
-		if ('post.php' == $hook) {
-			wp_enqueue_script('ajax-script', plugins_url('wp-bpi-plugin/assets/push.js'), array('jquery'));
-			return;
-		}
-		if ('bpi-options_page_bpi-syndication' == $hook) {
-
+		if ('post.php' == $hook || 'bpi-options_page_bpi-syndication' == $hook) {
 			wp_enqueue_style('bpi-style', plugins_url('wp-bpi-plugin/assets/style.css'));
-			wp_enqueue_style('wp-jquery-ui-dialog');
 			return;
 		}
 	}
@@ -185,9 +233,8 @@ class Plugin extends Pattern_Singleton
 		$images    = empty($_GET['images']) ? null : $_GET['images'];
 
 		/**
-		 * Add check to confirm we have no such object which was pulled already.
+		 * @todo: Check to confirm we have no such object which was pulled already.
 		 */
-
 		$postStatus = Pull::init()->insertPost($bpiNodeId, $images);
 
 		die(json_encode(array(
@@ -207,11 +254,13 @@ class Plugin extends Pattern_Singleton
 				throw new \Exception('No post ID given');
 			}
 
-			Bpi::init()->pushNode(PostStatus::init($_REQUEST['post_id'])->prepareToBpi('Review', 'All'));
+			PostStatus::init($_REQUEST['post_id'])->pushToBpi($_REQUEST['category'],$_REQUEST['audience'],$_REQUEST['images'], $_REQUEST['anonymous'], $_REQUEST['editable'], $_REQUEST['references']);
 
 			echo json_encode(array(
 				'state' => 1,
-				'text'  => 'Pushed at ' . PostStatus::init($_REQUEST['post_id'])->getBpiDate('d.m.Y H:i'),
+				'text'  => Renderer::render_template('meta', array(
+					'params' => PostStatus::init($_REQUEST['post_id'])->getMetaParams()
+				))
 			));
 
 		} catch ( \Exception $e ) {
@@ -223,4 +272,28 @@ class Plugin extends Pattern_Singleton
 		wp_die();
 	}
 
+	public function ajaxCheckPushAction()
+	{
+		try {
+			if (empty($_REQUEST['post_id'])) {
+				throw new \Exception('No post ID given');
+			}
+			$dictionaries = Bpi::init()->getDictionaries();
+			echo json_encode(array(
+				'state' => 1,
+				'html'  => Renderer::render_template('ajax-popup-push', array(
+					'postStatus' => PostStatus::init($_REQUEST['post_id']),
+					'categories' => $dictionaries['category'],
+					'audience'   => $dictionaries['audience']
+				))
+			));
+		} catch
+		( \Exception $e ) {
+			echo json_encode(array(
+				'state'   => 0,
+				'message' => $e->getMessage()
+			));
+		}
+		wp_die();
+	}
 }

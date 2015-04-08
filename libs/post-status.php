@@ -1,6 +1,8 @@
 <?php
 namespace WordpressBpi;
 
+use Fruitframe\Renderer;
+
 /**
  * Using Singleton Pattern for the list of posts
  * Helper-class to extend Wordpress Post with all bpi-staff.
@@ -14,6 +16,15 @@ class PostStatus
 
 	protected $_postId;
 	protected $_postData;
+
+	protected $_bpiMeta = array(
+		'bpi'                => null,
+		'bpi_id'             => null,
+		'bpi_push_status'    => null,
+		'bpi_push_timestamp' => null,
+		'bpi_pull_status'    => null,
+		'bpi_pull_timestamp' => null,
+	);
 
 	/**
 	 * @param $postId
@@ -30,6 +41,7 @@ class PostStatus
 
 	/**
 	 * @param $postId
+	 *
 	 * @throws \Exception
 	 *
 	 * @return PostStatus
@@ -44,6 +56,7 @@ class PostStatus
 
 	/**
 	 * @param $bpiId
+	 *
 	 * @throws \Exception
 	 *
 	 * @return bool|PostStatus
@@ -65,19 +78,56 @@ class PostStatus
 	 */
 	public function getTableState()
 	{
-		if ($this->getBpiStatus()) {
+		if ($this->_checkBpi()) {
 			return 'Already pulled. <a href="' . get_admin_url(null,
-				'post.php?action=edit&post=' . $this->_postId). '">Check</a>';
+				'post.php?action=edit&post=' . $this->_postId) . '">Check</a>';
 		}
 		return '';
 	}
 
+	/**
+	 * Get params for meta-block
+	 * @return array
+	 */
+	public function getMetaParams()
+	{
+		$params = array(
+			'export'     => $this->_postId
+		);
+		if ( ! $this->_checkBpi()) {
+			$params['BPI Status'] = 'Not in BPI';
+			return $params;
+		}
+		$params['BPI Status'] = 'In BPI';
+		$params['BPI ID'] = $this->_bpiMeta['bpi_id'];
+		if (($params['Pull status'] = (int)$this->_bpiMeta['bpi_pull_status'])) {
+			$params['Pull date'] = date('d.m.Y H:i', $this->_bpiMeta['bpi_pull_timestamp']);
+		}
+		if (($params['Push status'] = (int)$this->_bpiMeta['bpi_push_status'])) {
+			$params['Push date'] = date('d.m.Y H:i', $this->_bpiMeta['bpi_push_timestamp']);
+			unset($params['export']);
+		}
+		return $params;
+	}
+
+	/**
+	 * Return status for the posts table
+	 * @return string|void
+	 */
 	public function getPostsTableState()
 	{
-		if ($this->getBpiStatus()) {
-			return 'Pulled at '.$this->getBpiDate('d.m.Y H:i');
+		if ( ! $this->_checkBpi()) {
+			return;
 		}
-		return '';
+		$response = '';
+		if ($this->_bpiMeta['bpi_pull_status']) {
+			$response .= 'Pulled at ' . date('d.m.Y H:i', $this->_bpiMeta['bpi_pull_timestamp']);
+		}
+		if ($this->_bpiMeta['bpi_push_status']) {
+			$response .= ($response ? '<br/>' : '') . 'Pushed at ' . date('d.m.Y H:i',
+					$this->_bpiMeta['bpi_push_timestamp']);
+		}
+		return $response;
 	}
 
 	/**
@@ -88,52 +138,6 @@ class PostStatus
 		return $this->_postData;
 	}
 
-	public function renderPush()
-	{
-		if (empty($_GET['post'])) {
-			return 'Cant\'t push new post';
-		}
-		$postId = intval($_GET['post']);
-		if (get_post_meta($postId, 'bpi_push_status', true)) {
-			$date = get_post_meta($postId, 'bpi_timestamp', true);
-			return 'Pushed at ' . date('d.m.Y H:i', $date);
-		}
-		return '<a href="javascript:void(0);" id="push-to-bpi" data-post-id="' . $postId . '">Push to BPI</a>';
-	}
-
-	public function renderBpiStatus()
-	{
-		if ( ! empty($_GET['post'])) {
-			$postId = intval($_GET['post']);
-			if (get_post_meta($postId, 'bpi_push_status', true)) {
-				return 'Pushed to BPI';
-			}
-			if (get_post_meta($postId, 'bpi', true)) {
-				return 'Imported from BPI';
-			}
-		}
-		return 'Not in BPI yet';
-	}
-
-	public function renderBpiDate()
-	{
-		if ( ! empty($_GET['post'])) {
-			$postId = intval($_GET['post']);
-			if ($timestamp = get_post_meta($postId, 'bpi_timestamp', true)) {
-				return date('d.m.Y H:i', $timestamp);
-			}
-		}
-		return ' None';
-	}
-
-	public function getBpiStatus()
-	{
-		if (get_post_meta($this->_postId, 'bpi_push_status', true) || get_post_meta($this->_postId, 'bpi', true)) {
-			return true;
-		}
-		return false;
-	}
-
 	public function getBpiDate(
 		$format = false
 	) {
@@ -141,6 +145,75 @@ class PostStatus
 			return false;
 		}
 		return $format ? date($format, $date) : $date;
+	}
+
+	/**
+	 * Pushing current post to BPI and saving all needed params right here
+	 *
+	 * @param $category
+	 * @param $audience
+	 * @param $images
+	 * @param $anonymous
+	 * @param $editable
+	 * @param $references
+	 */
+	public function pushToBpi($category, $audience, $images, $anonymous, $editable, $references)
+	{
+		$bpiData = $this->_prepareToBpi($category, $audience, $images, ! $anonymous, $editable, $references);
+		$pushStatus = Bpi::init()->pushNode($bpiData);
+		if ($pushStatus) {
+			add_post_meta($this->_postId, 'bpi', 1, true);
+			add_post_meta($this->_postId, 'bpi_push_status', 1, true);
+			add_post_meta($this->_postId, 'bpi_id', $pushStatus['id'], true);
+			add_post_meta($this->_postId, 'bpi_push_timestamp', time(), true);
+		}
+	}
+
+	/**
+	 * Pulling current post from BPI (not actually pulling but still saving params)
+	 *
+	 * @param       $externalId
+	 * @param array $images
+	 */
+	public function pullFromBpi($externalId, $images = array())
+	{
+		add_post_meta($this->_postId, 'bpi', 1, true);
+		add_post_meta($this->_postId, 'bpi_id', $externalId, true);
+		add_post_meta($this->_postId, 'bpi_pull_timestamp', time(), true);
+
+		if ($images) {
+			$thumbnailSet = false;
+			foreach ($images as $image) {
+				$image = $image . '.jpg';
+
+				// Set variables for storage, fix file filename for query strings.
+				preg_match('/[^\?]+\.(jpe?g|jpe|gif|png)\b/i', $image, $matches);
+				$file_array         = array();
+				$file_array['name'] = basename($matches[0]);
+
+				// Download file to temp location.
+				$file_array['tmp_name'] = download_url($image);
+
+				// If error storing temporarily, return the error.
+				/*if (is_wp_error($file_array['tmp_name'])) {
+					return $file_array['tmp_name'];
+				}*/
+
+				// Do the validation and storage stuff.
+				$id = media_handle_sideload($file_array, $this->_postId);
+
+				// If error storing permanently, unlink.
+				if (is_wp_error($id)) {
+					@unlink($file_array['tmp_name']);
+					//return $id;
+				}
+				if ( ! $thumbnailSet) {
+					set_post_thumbnail($this->_postId, $id);
+					$thumbnailSet = true;
+				}
+			}
+		}
+
 	}
 
 	/**
@@ -165,7 +238,14 @@ class PostStatus
 	 * @todo Add a hook allowing changing the values before they are sent to BPI.
 	 * @todo Split this function into smaller parts (ex: images, texts).
 	 */
-	public function prepareToBpi($category, $audience, $with_images = false, $authorship = false, $editable = 1, $with_refs = false) {
+	public function _prepareToBpi(
+		$category,
+		$audience,
+		$with_images = false,
+		$authorship = false,
+		$editable = 1,
+		$with_refs = false
+	) {
 		$bpi_content = array();
 
 		$bpi_content['agency_id'] = \wpJediOptions::get_option('bpi_options', 'agency_id');
@@ -177,6 +257,7 @@ class PostStatus
 		$bpi_content['lastname']  = '';
 
 		$bpi_content['title'] = $this->_postData->post_title;
+		$teaser               = $this->_postData->post_excerpt ? $this->_postData->post_excerpt : fruitframe_truncate($this->_postData->post_content);
 
 
 		/*		$teaser_field = $wpPost->post_excerpt;
@@ -194,34 +275,30 @@ class PostStatus
 
 		// Find the references to the ting date well.
 		$materials_drupal = array();
-		if ($with_refs) {
-			$materials_map = field_view_field('node', $node, variable_get('bpi_field_materials', ''));
-			if (isset($materials_map['#items'])) {
-				foreach ($materials_map['#items'] as $key => $value) {
-					if ( ! empty($materials_map[$key]['#object'])) {
-						$ting_entity = $materials_map[$key]['#object'];
-						$id          = $ting_entity->ding_entity_id;
-
-						// Filter out id's with "katalog" PID, as they only makes sens on
-						// current site.
-						if ( ! preg_match('/katalog/', $id)) {
-							$materials_drupal[] = $id;
-						}
-					}
-				}
-			}
-		}
+		/* @todo: understand what the hell is this references for.
+		 * if ($with_refs) {
+		 *
+		 * $materials_map = field_view_field('node', $node, variable_get('bpi_field_materials', ''));
+		 * if (isset($materials_map['#items'])) {
+		 * foreach ($materials_map['#items'] as $key => $value) {
+		 * if ( ! empty($materials_map[$key]['#object'])) {
+		 * $ting_entity = $materials_map[$key]['#object'];
+		 * $id          = $ting_entity->ding_entity_id;
+		 *
+		 * // Filter out id's with "katalog" PID, as they only makes sens on
+		 * // current site.
+		 * if ( ! preg_match('/katalog/', $id)) {
+		 * $materials_drupal[] = $id;
+		 * }
+		 * }
+		 * }
+		 * }
+		 * }*/
 
 		/*		if ( ! empty($body_field) && isset($body_field['#items'][0]['safe_value'])) {
 					$body = $body_field['#items'][0]['safe_value'];
 				}*/
-		$teaser = $body = apply_filters('the_content', $this->_postData->post_content);
-
-		// Empty the teaser, if body and teaser are mapped to same fields
-		// and the values are identical.
-		if ($teaser === $body) {
-			$teaser = '';
-		}
+		$body = apply_filters('the_content', $this->_postData->post_content);
 
 		$bpi_content['body']   = html_entity_decode($body);
 		$bpi_content['teaser'] = html_entity_decode($teaser);
@@ -232,29 +309,29 @@ class PostStatus
 		$bpi_content['category']          = $category;
 		$bpi_content['audience']          = $audience;
 		$bpi_content['related_materials'] = $materials_drupal;
-		$bpi_content['editable']          = (int) $editable;
-		$bpi_content['authorship']        = ($authorship) ? false : true;
+		$bpi_content['editable']          = $editable;
+		$bpi_content['authorship']        = $authorship;
 		$bpi_content['images']            = array();
 
 		if ($with_images) {
-			$image_fields = bpi_fetch_image_fields($node->type);
-
-			if ( ! empty($image_fields)) {
-				foreach ($image_fields as $field_name) {
-					$field_value = field_view_field('node', $node, $field_name);
-
-					if ( ! empty($field_value['#items'][0]['uri'])) {
-						$file_url = file_create_url($field_value['#items'][0]['uri']);
-						// Image pseudo-check.
-						if (@getimagesize($file_url)) {
-							$bpi_content['images'][] = array(
-								'path'  => $file_url,
-								'alt'   => '',
-								'title' => '',
-							);
-						}
-					}
+			foreach (fruitframe_get_attachments($this->_postId) as $image) {
+				$bpi_content['images'][] = array(
+					'path'  => fruitframe_get_attachment_image_src($image->ID, 'full'),
+					'alt'   => '',
+					'title' => '',
+				);
+			}
+			if (empty($bpi_content['images']))
+			{
+				if (($thumbId = get_post_thumbnail_id($this->_postId)))
+				{
+					$bpi_content['images'][] = array(
+						'path'  => fruitframe_get_attachment_image_src($thumbId, 'full'),
+						'alt'   => '',
+						'title' => '',
+					);
 				}
+
 			}
 		} else {
 			$bpi_content['body'] = preg_replace(
@@ -265,5 +342,13 @@ class PostStatus
 		}
 
 		return $bpi_content;
+	}
+
+	protected function _checkBpi()
+	{
+		foreach ($this->_bpiMeta as $key => $value) {
+			$this->_bpiMeta[$key] = get_post_meta($this->_postId, $key, true);
+		}
+		return $this->_bpiMeta['bpi'];
 	}
 }

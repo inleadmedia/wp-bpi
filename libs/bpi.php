@@ -36,16 +36,7 @@ class Bpi extends \Fruitframe\Pattern_Singleton
 	 *
 	 * @return \Bpi\Sdk\NodeList
 	 */
-	public function search(
-		$page = 1,
-		$sort_by = 'pushed',
-		$sort = 'desc',
-		$search = '',
-		$audience = '',
-		$category = '',
-		$agency_id = '',
-		$author = ''
-	) {
+	public function search($page = 1, $sort_by = 'pushed', $sort = 'desc', $search = '', $audience = '', $category = '', $agency_id = '', $author = '') {
 		$offset  = ($page-1) * $this->_amountPerPage;
 		$filters = array(
 			'category'  => $category,
@@ -167,10 +158,10 @@ class Bpi extends \Fruitframe\Pattern_Singleton
 	{
 		$push_result = $this->_bpi->push($bpiNode)->getProperties();
 
-		if ( ! empty($push_result['id'])) {
-			add_post_meta($bpiNode['local_id'], 'bpi_push_status', 1);
-			add_post_meta($bpiNode['local_id'], 'bpi_id', $push_result['id']);
-			add_post_meta($bpiNode['local_id'], 'bpi_timestamp', time());
+		if (empty($push_result['id']))
+		{
+			return FALSE;
 		}
+		return $push_result;
 	}
 }
