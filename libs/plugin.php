@@ -94,6 +94,9 @@ class Plugin extends Pattern_Singleton
 			add_action('current_screen', array($this, 'initTable'));
 			add_action('admin_enqueue_scripts', array($this, 'scriptsEnqueue'));
 
+			add_filter('manage_posts_columns', array($this, 'addColumnHead'));
+			add_action('manage_posts_custom_column', array($this, 'addColumnContent'), 10, 2);
+
 			add_action('wp_ajax_pull_from_bpi', array($this, 'ajaxPullAction'));
 			add_action('wp_ajax_check_pull_from_bpi', array($this, 'ajaxCheckPullAction'));
 			add_action('wp_ajax_push_to_bpi', array($this, 'ajaxPushAction'));
@@ -101,6 +104,19 @@ class Plugin extends Pattern_Singleton
 
 		$obRole = get_role('administrator');
 		$obRole->add_cap('bpi');
+	}
+
+	public function addColumnHead($defaults)
+	{
+		$defaults['bpi'] = 'BPI Timestamp';
+		return $defaults;
+	}
+
+	public function addColumnContent($column_name, $post_ID)
+	{
+		if ($column_name == 'bpi') {
+			echo PostStatus::init($post_ID)->getPostsTableState();
+		}
 	}
 
 	/**
@@ -180,6 +196,7 @@ class Plugin extends Pattern_Singleton
 			'field'       => $postStatus->getTableState(),
 			'id'          => 'record_' . $bpiNodeId,
 			'column_name' => '_actions'
+
 		)));
 	}
 

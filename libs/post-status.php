@@ -72,6 +72,14 @@ class PostStatus
 		return '';
 	}
 
+	public function getPostsTableState()
+	{
+		if ($this->getBpiStatus()) {
+			return 'Pulled at '.$this->getBpiDate('d.m.Y H:i');
+		}
+		return '';
+	}
+
 	/**
 	 * @return null|\WP_Post
 	 */
