@@ -1,0 +1,41 @@
+.bpi-style
+{
+	float: left !important;
+	margin-right: 6px !important;
+}
+
+.bpi-text-panel-block
+{
+	float: right;
+	display: block;
+	height: 30px;
+	color: #555;
+	line-height: 30px;
+	margin-right: 6px;
+	text-decoration: none;
+}
+
+.bpi-text-panel-block span
+{
+	border: 1px solid #555;
+	border-radius: 14px;
+	background: #555;
+	color: white;
+	font-size: 10px;
+	margin: 10px 4px 8px;
+	width: 10px;
+	/*line-height: 33px;*/
+	height: 10px;
+	/*visibility: hidden;*/
+}
+
+.bpi-text-panel-block:hover
+{
+	color: #555;
+}
+.bpi-text-panel-block:hover span
+{
+	background: #36A3CA;
+	border-color: #36A3CA;
+	/*visibility: visible;*/
+}
