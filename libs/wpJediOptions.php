@@ -43,6 +43,9 @@ class wpJediOptions
 	private $page_slug;
 	private $option_group;
 
+	private $is_sub_page = false;
+	private $parent_page_slug = false;
+
 	/**
 	 * Start up
 	 */
@@ -60,6 +63,8 @@ class wpJediOptions
 		$this->options_name = $data['options_name'];
 		$this->option_group = $data['options_group'];
 
+		$this->is_sub_page = !empty($data['parent_page_slug']);
+		$this->parent_page_slug = empty($data['parent_page_slug']) ? '' : $data['parent_page_slug'];
 	}
 
 	/**
@@ -67,14 +72,30 @@ class wpJediOptions
 	 */
 	public function add_plugin_page()
 	{
-		// This page will be under "Settings"
-		add_menu_page(
-			$this->page_options_title,
-			$this->page_menu_title,
-			'manage_options',
-			$this->page_slug,
-			array( $this, 'create_admin_page' )
-		);
+		if ($this->is_sub_page)
+		{
+			// This page will be under "Settings"
+			add_submenu_page(
+				$this->parent_page_slug,
+				$this->page_options_title,
+				$this->page_menu_title,
+				'manage_options',
+				$this->page_slug,
+				array($this, 'create_admin_page')
+			);
+		}
+		else
+		{
+			// This page will be under "Settings"
+			add_menu_page(
+				$this->page_options_title,
+				$this->page_menu_title,
+				'manage_options',
+				$this->page_slug,
+				array($this, 'create_admin_page')
+			);
+		}
+
 
 	}
 

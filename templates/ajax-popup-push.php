@@ -10,28 +10,28 @@
 	<div>
 		You're about to push content “<?php echo $postStatus->getPostObject()->post_title ?>”
 	</div>
-	<h3>BPI VOCABULARIES</h3>
+	<h3>AE VOCABULARIES</h3>
 
-	<p>BPI vocabularies is used to categories the pushed content, so searching for content later is easier and related
+	<p>Article Exchange vocabularies is used to categorize pushed content, so searching for content later is easier and related
 	   content can be found.</p>
 
 	<p>
+		<label for="category">Select category</label>
 		<select name="category" id="category" class="push-options">
-<!--			<option>Select category</option>-->
 			<?php foreach ($categories as $category): ?>
 				<option value="<?php echo $category ?>"><?php echo $category ?></option>
 			<?php endforeach ?>
 		</select>
 	</p>
 	<p>
+		<label for="category">Select audience</label>
 		<select name="audience" id="audience" class="push-options">
-<!--			<option>Select audience:</option>-->
 			<?php foreach ($audience as $item): ?>
 				<option value="<?php echo $item ?>"><?php echo $item ?></option>
 			<?php endforeach ?>
 		</select>
 	</p>
-	<h3>BPI OPTIONS</h3>
+	<h3>Article Exchange OPTIONS</h3>
 
 	<p><input type="checkbox" name="images" id="images" value="1" class="push-options"/> <label for="images">Push with
 	                                                                                               images</label></p>
@@ -46,7 +46,7 @@
 	</p>
 
 	<p>
-		<small>If checked the content will be pushed as anonymous to BPI.</small>
+		<small>If checked the content will be pushed as anonymous to Article Exchange.</small>
 	</p>
 	<br/>
 

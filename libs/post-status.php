@@ -1,14 +1,14 @@
 <?php
-namespace WordpressBpi;
+namespace WordpressAe;
 
 use Fruitframe\Renderer;
 
 /**
  * Using Singleton Pattern for the list of posts
- * Helper-class to extend Wordpress Post with all bpi-staff.
+ * Helper-class to extend Wordpress Post with all AE-staff.
  *
  * Class PostStatus
- * @package WordpressBpi
+ * @package WordpressAe
  */
 class PostStatus
 {
@@ -17,13 +17,15 @@ class PostStatus
 	protected $_postId;
 	protected $_postData;
 
-	protected $_bpiMeta = array(
-		'bpi'                => null,
-		'bpi_id'             => null,
-		'bpi_push_status'    => null,
-		'bpi_push_timestamp' => null,
-		'bpi_pull_status'    => null,
-		'bpi_pull_timestamp' => null,
+	protected $_aeMeta = array(
+		'ae'                => null,
+		'ae_id'             => null,
+		'ae_push_status'    => null,
+		'ae_push_timestamp' => null,
+		'ae_pull_status'    => null,
+		'ae_pull_timestamp' => null,
+		'ae_category'       => null,
+		'ae_audience'       => null
 	);
 
 	/**
@@ -55,17 +57,17 @@ class PostStatus
 	}
 
 	/**
-	 * @param $bpiId
+	 * @param $aeId
 	 *
 	 * @throws \Exception
 	 *
 	 * @return bool|PostStatus
 	 */
-	public static function findByBpiId($bpiId)
+	public static function findByAeId($aeId)
 	{
 		if (count($results = get_posts(array(
-			'meta_key'    => 'bpi_id',
-			'meta_value'  => $bpiId,
+			'meta_key'    => 'ae_id',
+			'meta_value'  => $aeId,
 			'post_status' => 'any'
 		)))) {
 			return self::init($results[0]->ID);
@@ -78,7 +80,7 @@ class PostStatus
 	 */
 	public function getTableState()
 	{
-		if ($this->_checkBpi()) {
+		if ($this->_checkAe()) {
 			return 'Already pulled. <a href="' . get_admin_url(null,
 				'post.php?action=edit&post=' . $this->_postId) . '">Check</a>';
 		}
@@ -94,19 +96,21 @@ class PostStatus
 		$params = array(
 			'export'     => $this->_postId
 		);
-		if ( ! $this->_checkBpi()) {
-			$params['BPI Status'] = 'Not in BPI';
+		if ( ! $this->_checkAe()) {
+			$params['AE Status'] = 'Not in AE';
 			return $params;
 		}
-		$params['BPI Status'] = 'In BPI';
-		$params['BPI ID'] = $this->_bpiMeta['bpi_id'];
-		if (($params['Pull status'] = (int)$this->_bpiMeta['bpi_pull_status'])) {
-			$params['Pull date'] = date('d.m.Y H:i', $this->_bpiMeta['bpi_pull_timestamp']);
+		$params['AE Status'] = 'In AE';
+		$params['AE ID'] = $this->_aeMeta['ae_id'];
+		if (($params['Pull status'] = (int)$this->_aeMeta['ae_pull_status'])) {
+			$params['Pull date'] = date('d.m.Y H:i', $this->_aeMeta['ae_pull_timestamp']);
 		}
-		if (($params['Push status'] = (int)$this->_bpiMeta['bpi_push_status'])) {
-			$params['Push date'] = date('d.m.Y H:i', $this->_bpiMeta['bpi_push_timestamp']);
+		if (($params['Push status'] = (int)$this->_aeMeta['ae_push_status'])) {
+			$params['Push date'] = date('d.m.Y H:i', $this->_aeMeta['ae_push_timestamp']);
 			unset($params['export']);
 		}
+		$params['AE Category'] = $this->_aeMeta['ae_category'];
+		$params['AE Audience'] = $this->_aeMeta['ae_audience'];
 		return $params;
 	}
 
@@ -116,16 +120,16 @@ class PostStatus
 	 */
 	public function getPostsTableState()
 	{
-		if ( ! $this->_checkBpi()) {
+		if ( ! $this->_checkAe()) {
 			return;
 		}
 		$response = '';
-		if ($this->_bpiMeta['bpi_pull_status']) {
-			$response .= 'Pulled at ' . date('d.m.Y H:i', $this->_bpiMeta['bpi_pull_timestamp']);
+		if ($this->_aeMeta['ae_pull_status']) {
+			$response .= 'Pulled at ' . date('d.m.Y H:i', $this->_aeMeta['ae_pull_timestamp']);
 		}
-		if ($this->_bpiMeta['bpi_push_status']) {
+		if ($this->_aeMeta['ae_push_status']) {
 			$response .= ($response ? '<br/>' : '') . 'Pushed at ' . date('d.m.Y H:i',
-					$this->_bpiMeta['bpi_push_timestamp']);
+					$this->_aeMeta['ae_push_timestamp']);
 		}
 		return $response;
 	}
@@ -138,17 +142,17 @@ class PostStatus
 		return $this->_postData;
 	}
 
-	public function getBpiDate(
+	public function getAeDate(
 		$format = false
 	) {
-		if ( ! ($date = get_post_meta($this->_postId, 'bpi_timestamp', true))) {
+		if ( ! ($date = get_post_meta($this->_postId, 'ae_timestamp', true))) {
 			return false;
 		}
 		return $format ? date($format, $date) : $date;
 	}
 
 	/**
-	 * Pushing current post to BPI and saving all needed params right here
+	 * Pushing current post to AE and saving all needed params right here
 	 *
 	 * @param $category
 	 * @param $audience
@@ -157,29 +161,36 @@ class PostStatus
 	 * @param $editable
 	 * @param $references
 	 */
-	public function pushToBpi($category, $audience, $images, $anonymous, $editable, $references)
+	public function pushToAe($category, $audience, $images, $anonymous, $editable, $references)
 	{
-		$bpiData = $this->_prepareToBpi($category, $audience, $images, ! $anonymous, $editable, $references);
-		$pushStatus = Bpi::init()->pushNode($bpiData);
+		$aeData = $this->_prepareToAe($category, $audience, $images, $anonymous, $editable, $references);
+		$pushStatus = ArticleExchange::init()->pushNode($aeData);
 		if ($pushStatus) {
-			add_post_meta($this->_postId, 'bpi', 1, true);
-			add_post_meta($this->_postId, 'bpi_push_status', 1, true);
-			add_post_meta($this->_postId, 'bpi_id', $pushStatus['id'], true);
-			add_post_meta($this->_postId, 'bpi_push_timestamp', time(), true);
+			add_post_meta($this->_postId, 'ae', 1, true);
+			add_post_meta($this->_postId, 'ae_push_status', 1, true);
+			add_post_meta($this->_postId, 'ae_id', $pushStatus['id'], true);
+			add_post_meta($this->_postId, 'ae_push_timestamp', time(), true);
+			add_post_meta($this->_postId, 'ae_category', $category, true);
+			add_post_meta($this->_postId, 'ae_audience', $audience, true);
+
 		}
 	}
 
 	/**
-	 * Pulling current post from BPI (not actually pulling but still saving params)
+	 * Pulling current post from AE (not actually pulling but still saving params)
 	 *
 	 * @param       $externalId
 	 * @param array $images
 	 */
-	public function pullFromBpi($externalId, $images = array())
+	public function pullFromAe($externalId, $images = array(), $nodeProperties)
 	{
-		add_post_meta($this->_postId, 'bpi', 1, true);
-		add_post_meta($this->_postId, 'bpi_id', $externalId, true);
-		add_post_meta($this->_postId, 'bpi_pull_timestamp', time(), true);
+		add_post_meta($this->_postId, 'ae', 1, true);
+		add_post_meta($this->_postId, 'ae_id', $externalId, true);
+		add_post_meta($this->_postId, 'ae_pull_timestamp', time(), true);
+		add_post_meta($this->_postId, 'ae_pull_status', 1, true);
+		add_post_meta($this->_postId, 'ae_category', $nodeProperties['category'], true);
+		add_post_meta($this->_postId, 'ae_audience', $nodeProperties['audience'], true);
+
 
 		if ($images) {
 			$thumbnailSet = false;
@@ -220,9 +231,9 @@ class PostStatus
 	 * Convert node object to array structure, suitable for pushing to the well.
 	 *
 	 * @param string $category
-	 *   Selected category at the BPI side.
+	 *   Selected category at the AE side.
 	 * @param string $audience
-	 *   Selected audience at the BPI side.
+	 *   Selected audience at the AE side.
 	 * @param bool   $with_images
 	 *   Include images or not.
 	 * @param bool   $authorship
@@ -233,12 +244,12 @@ class PostStatus
 	 *   If TRUE ting material reference are extracted.
 	 *
 	 * @return array
-	 *   An array of node values, used by the BPI web service.
+	 *   An array of node values, used by the AE web service.
 	 *
-	 * @todo Add a hook allowing changing the values before they are sent to BPI.
+	 * @todo Add a hook allowing changing the values before they are sent to AE.
 	 * @todo Split this function into smaller parts (ex: images, texts).
 	 */
-	public function _prepareToBpi(
+	public function _prepareToAe(
 		$category,
 		$audience,
 		$with_images = false,
@@ -246,17 +257,20 @@ class PostStatus
 		$editable = 1,
 		$with_refs = false
 	) {
-		$bpi_content = array();
+		$ae_content = array();
 
-		$bpi_content['agency_id'] = \wpJediOptions::get_option('bpi_options', 'agency_id');
-		$bpi_content['local_id']  = $this->_postId;
-		$bpi_content['bpi_id']    = get_post_meta($this->_postId, 'bpi_id', true);
+		$ae_content['agency_id'] = \wpJediOptions::get_option('ae_options', 'agency_id');
+		$ae_content['local_id']  = $this->_postId;
+		$ae_content['ae_id']    = get_post_meta($this->_postId, 'ae_id', true);
 
-		$user                     = get_user_by('id', $this->_postData->post_author);
-		$bpi_content['firstname'] = $user->display_name;
-		$bpi_content['lastname']  = '';
+		$ae_content['firstname'] = $ae_content['lastname']  = '';
 
-		$bpi_content['title'] = $this->_postData->post_title;
+		if ($authorship) {
+			$user                    = get_user_by('id', $this->_postData->post_author);
+			$ae_content['firstname'] = $user->display_name;
+		}
+
+		$ae_content['title'] = $this->_postData->post_title;
 		$teaser               = $this->_postData->post_excerpt ? $this->_postData->post_excerpt : fruitframe_truncate($this->_postData->post_content);
 
 
@@ -278,7 +292,7 @@ class PostStatus
 		/* @todo: understand what the hell is this references for.
 		 * if ($with_refs) {
 		 *
-		 * $materials_map = field_view_field('node', $node, variable_get('bpi_field_materials', ''));
+		 * $materials_map = field_view_field('node', $node, variable_get('ae_field_materials', ''));
 		 * if (isset($materials_map['#items'])) {
 		 * foreach ($materials_map['#items'] as $key => $value) {
 		 * if ( ! empty($materials_map[$key]['#object'])) {
@@ -300,32 +314,32 @@ class PostStatus
 				}*/
 		$body = apply_filters('the_content', $this->_postData->post_content);
 
-		$bpi_content['body']   = html_entity_decode($body);
-		$bpi_content['teaser'] = html_entity_decode($teaser);
+		$ae_content['body']   = html_entity_decode($body);
+		$ae_content['teaser'] = html_entity_decode($teaser);
 		$dt                    = new \DateTime();
 		$dt->setTimestamp(strtotime($this->_postData->post_date));
-		$bpi_content['creation']          = $dt->format(\DateTime::W3C);
-		$bpi_content['type']              = 'post';
-		$bpi_content['category']          = $category;
-		$bpi_content['audience']          = $audience;
-		$bpi_content['related_materials'] = $materials_drupal;
-		$bpi_content['editable']          = $editable;
-		$bpi_content['authorship']        = $authorship;
-		$bpi_content['images']            = array();
+		$ae_content['creation']          = $dt->format(\DateTime::W3C);
+		$ae_content['type']              = 'post';
+		$ae_content['category']          = $category;
+		$ae_content['audience']          = $audience;
+		$ae_content['related_materials'] = $materials_drupal;
+		$ae_content['editable']          = $editable;
+		$ae_content['authorship']        = $authorship;
+		$ae_content['images']            = array();
 
 		if ($with_images) {
 			foreach (fruitframe_get_attachments($this->_postId) as $image) {
-				$bpi_content['images'][] = array(
+				$ae_content['images'][] = array(
 					'path'  => fruitframe_get_attachment_image_src($image->ID, 'full'),
 					'alt'   => '',
 					'title' => '',
 				);
 			}
-			if (empty($bpi_content['images']))
+			if (empty($ae_content['images']))
 			{
 				if (($thumbId = get_post_thumbnail_id($this->_postId)))
 				{
-					$bpi_content['images'][] = array(
+					$ae_content['images'][] = array(
 						'path'  => fruitframe_get_attachment_image_src($thumbId, 'full'),
 						'alt'   => '',
 						'title' => '',
@@ -334,21 +348,21 @@ class PostStatus
 
 			}
 		} else {
-			$bpi_content['body'] = preg_replace(
+			$ae_content['body'] = preg_replace(
 				'~(<p>)?<img.+?/>(</p>)?~is',
 				'',
-				$bpi_content['body']
+				$ae_content['body']
 			);
 		}
 
-		return $bpi_content;
+		return $ae_content;
 	}
 
-	protected function _checkBpi()
+	protected function _checkAe()
 	{
-		foreach ($this->_bpiMeta as $key => $value) {
-			$this->_bpiMeta[$key] = get_post_meta($this->_postId, $key, true);
+		foreach ($this->_aeMeta as $key => $value) {
+			$this->_aeMeta[$key] = get_post_meta($this->_postId, $key, true);
 		}
-		return $this->_bpiMeta['bpi'];
+		return $this->_aeMeta['ae'];
 	}
 }

@@ -1,5 +1,5 @@
 <?php
-namespace WordpressBpi;
+namespace WordpressAe;
 
 use Fruitframe\Pattern_Singleton;
 use Fruitframe\AddMetaBox;
@@ -17,13 +17,14 @@ class Plugin extends Pattern_Singleton
 	protected function __construct()
 	{
 		$this->_page_options = new \wpJediOptions(array(
-				"page_title"      => "BPI Options",
-				"page_menu_title" => "BPI Options",
-				"page_slug"       => "bpi-options",
-				"page_note"       => "",
-				"options_name"    => "bpi_options",
-				"options_group"   => "bpi_options_group",
-				"options"         => array(
+				"parent_page_slug" => 'ae-syndication',
+				"page_title"       => "Settings",
+				"page_menu_title"  => "Settings",
+				"page_slug"        => "ae-options",
+				"page_note"        => "",
+				"options_name"     => "ae_options",
+				"options_group"    => "ae_options_group",
+				"options"          => array(
 					"agency_id"        => array(
 						"label" => "Agency ID",
 						"name"  => "agency_id",
@@ -46,40 +47,39 @@ class Plugin extends Pattern_Singleton
 						"name"  => "url",
 					),
 					"content_per_page" => array(
-						"label" => "Content per page in Sindication",
+						"label" => "Content per page in Syndication",
 						"type"  => "text",
 						"name"  => "content_per_page",
 					)
 				)
 			)
 		);
-
 		//$postStatus = new PostStatus();
 
-		AddMetaBox::create('bpi', array(
-			'bpi'           => array(
+		AddMetaBox::create('ae', array(
+			'ae'           => array(
 				'label'   => 'Status',
 				'type'    => 'custom',
 				'default' => 0,
 				'handler' => array(
 					$this,
-					'renderBpiStatus'
+					'renderAeStatus'
 				),
 			),
-			'bpi_id'        => array(
+			'ae_id'        => array(
 				'label'   => 'Item ID',
 				'type'    => 'view',
 				'default' => 'None'
 			),
-			'bpi_timestamp' => array(
+			'ae_timestamp' => array(
 				'label'   => 'Import Date',
 				'type'    => 'custom',
 				'handler' => array(
 					$this,
-					'renderBpiDate'
+					'renderAeDate'
 				),
 			),
-			'custom'        => array(
+			'custom'       => array(
 				'label'   => 'Export',
 				'type'    => 'custom',
 				'handler' => array(
@@ -87,31 +87,31 @@ class Plugin extends Pattern_Singleton
 					'renderPush'
 				),
 			)
-		), 'post', 'BPI info', 'side');
+		), 'post', 'Article Exchange info', 'side');
 
 		if (is_admin()) {
-			add_action('admin_menu', array($this, 'addPages'));
+			add_action('admin_menu', array($this, 'addPages'), 3);
 			add_action('current_screen', array($this, 'initTable'));
 			add_action('admin_enqueue_scripts', array($this, 'scriptsEnqueue'));
 
 			add_filter('manage_posts_columns', array($this, 'addColumnHead'));
 			add_action('manage_posts_custom_column', array($this, 'addColumnContent'), 10, 2);
 
-			add_action('wp_ajax_pull_from_bpi', array($this, 'ajaxPullAction'));
-			add_action('wp_ajax_check_pull_from_bpi', array($this, 'ajaxCheckPullAction'));
-			add_action('wp_ajax_check_push_to_bpi', array($this, 'ajaxCheckPushAction'));
-			add_action('wp_ajax_push_to_bpi', array($this, 'ajaxPushAction'));
+			add_action('wp_ajax_pull_from_ae', array($this, 'ajaxPullAction'));
+			add_action('wp_ajax_check_pull_from_ae', array($this, 'ajaxCheckPullAction'));
+			add_action('wp_ajax_check_push_to_ae', array($this, 'ajaxCheckPushAction'));
+			add_action('wp_ajax_push_to_ae', array($this, 'ajaxPushAction'));
 
 			add_action('add_meta_boxes', array($this, 'addMeta'));
 		}
 
 		$obRole = get_role('administrator');
-		$obRole->add_cap('bpi');
+		$obRole->add_cap('ae');
 	}
 
 	public function addMeta()
 	{
-		add_meta_box('bpi', 'BPI status', array($this, 'renderMeta'), 'post', 'side');
+		add_meta_box('ae', 'Article Exchange status', array($this, 'renderMeta'), 'post', 'side');
 	}
 
 	public function renderMeta()
@@ -127,32 +127,32 @@ class Plugin extends Pattern_Singleton
 			return 'Cant\'t push new post';
 		}
 		$postId = intval($_GET['post']);
-		if (get_post_meta($postId, 'bpi_push_status', true)) {
-			$date = get_post_meta($postId, 'bpi_timestamp', true);
+		if (get_post_meta($postId, 'ae_push_status', true)) {
+			$date = get_post_meta($postId, 'ae_timestamp', true);
 			return 'Pushed at ' . date('d.m.Y H:i', $date);
 		}
-		return '<a href="javascript:void(0);" id="push-to-bpi" data-post-id="' . $postId . '">Push to BPI</a>';
+		return '<a href="javascript:void(0);" id="push-to-ae" data-post-id="' . $postId . '">Push to AE</a>';
 	}
 
-	public function renderBpiStatus()
+	public function renderAeStatus()
 	{
 		if ( ! empty($_GET['post'])) {
 			$postId = intval($_GET['post']);
-			if (get_post_meta($postId, 'bpi_push_status', true)) {
-				return 'Pushed to BPI';
+			if (get_post_meta($postId, 'ae_push_status', true)) {
+				return 'Pushed to AE';
 			}
-			if (get_post_meta($postId, 'bpi', true)) {
-				return 'Imported from BPI';
+			if (get_post_meta($postId, 'ae', true)) {
+				return 'Imported from AE';
 			}
 		}
-		return 'Not in BPI yet';
+		return 'Not in AE yet';
 	}
 
-	public function renderBpiDate()
+	public function renderAeDate()
 	{
 		if ( ! empty($_GET['post'])) {
 			$postId = intval($_GET['post']);
-			if ($timestamp = get_post_meta($postId, 'bpi_timestamp', true)) {
+			if ($timestamp = get_post_meta($postId, 'ae_timestamp', true)) {
 				return date('d.m.Y H:i', $timestamp);
 			}
 		}
@@ -161,13 +161,13 @@ class Plugin extends Pattern_Singleton
 
 	public function addColumnHead($defaults)
 	{
-		$defaults['bpi'] = 'BPI Timestamp';
+		$defaults['ae'] = 'AE Timestamp';
 		return $defaults;
 	}
 
 	public function addColumnContent($column_name, $post_ID)
 	{
-		if ($column_name == 'bpi') {
+		if ($column_name == 'ae') {
 			echo PostStatus::init($post_ID)->getPostsTableState();
 		}
 	}
@@ -177,7 +177,7 @@ class Plugin extends Pattern_Singleton
 	 */
 	public function addPages()
 	{
-		add_submenu_page('bpi-options', 'Syndication', 'Syndication', 'bpi', 'bpi-syndication',
+		add_menu_page('Article Exchange', 'Article Exchange', 'ae', 'ae-syndication',
 			array($this, 'renderSyndication'));
 	}
 
@@ -198,14 +198,14 @@ class Plugin extends Pattern_Singleton
 
 	public function scriptsEnqueue($hook)
 	{
-		wp_enqueue_script('bpi-script', plugins_url('wp-bpi-plugin/assets/script.js'), array('jquery-ui-dialog'));
+		wp_enqueue_script('ae-script', plugins_url('wp-ae-plugin/assets/script.js'), array('jquery-ui-dialog'));
 		wp_enqueue_style('wp-jquery-ui-dialog');
 
 		/**
 		 * Apply it only on post.php page
 		 */
-		if ('post.php' == $hook || 'bpi-options_page_bpi-syndication' == $hook) {
-			wp_enqueue_style('bpi-style', plugins_url('wp-bpi-plugin/assets/style.css'));
+		if ('post.php' == $hook || 'ae-options_page_ae-syndication' == $hook) {
+			wp_enqueue_style('ae-style', plugins_url('wp-ae-plugin/assets/style.css'));
 			return;
 		}
 	}
@@ -213,14 +213,16 @@ class Plugin extends Pattern_Singleton
 
 	public function ajaxCheckPullAction()
 	{
-		$nodeInfo = Pull::init()->getNodeInfo($_GET['bpi-node-id']);
+		$nodeInfo = Pull::init()->getNodeInfo($_GET['ae-node-id']);
 
 		die(json_encode(array(
 			'state' => 1,
 			'html'  => Renderer::render_template('ajax-popup-pull', array(
-				'properties' => $nodeInfo['properties'],
-				'assets'     => $nodeInfo['assets']
-			))
+				'properties'    => $nodeInfo['properties'],
+				'assets'        => $nodeInfo['assets'],
+			)),
+			'title' => $nodeInfo['properties']['title'],
+			'body'  => $nodeInfo['properties']['body'],
 		)));
 	}
 
@@ -229,19 +231,19 @@ class Plugin extends Pattern_Singleton
 	 */
 	public function ajaxPullAction()
 	{
-		$bpiNodeId = $_GET['bpi-node-id'];
-		$images    = empty($_GET['images']) ? null : $_GET['images'];
+		$aeNodeId = $_GET['ae-node-id'];
+		$images   = empty($_GET['images']) ? null : $_GET['images'];
 
 		/**
 		 * @todo: Check to confirm we have no such object which was pulled already.
 		 */
-		$postStatus = Pull::init()->insertPost($bpiNodeId, $images);
+		$postStatus = Pull::init()->insertPost($aeNodeId, $images);
 
 		die(json_encode(array(
 			'state'       => 1,
 			'text'        => '<div>' . $postStatus->getTableState() . '</div>',
 			'field'       => $postStatus->getTableState(),
-			'id'          => 'record_' . $bpiNodeId,
+			'id'          => 'record_' . $aeNodeId,
 			'column_name' => '_actions'
 
 		)));
@@ -254,7 +256,8 @@ class Plugin extends Pattern_Singleton
 				throw new \Exception('No post ID given');
 			}
 
-			PostStatus::init($_REQUEST['post_id'])->pushToBpi($_REQUEST['category'],$_REQUEST['audience'],$_REQUEST['images'], $_REQUEST['anonymous'], $_REQUEST['editable'], $_REQUEST['references']);
+			PostStatus::init($_REQUEST['post_id'])->pushToAe($_REQUEST['category'], $_REQUEST['audience'],
+				$_REQUEST['images'], ! $_REQUEST['anonymous'], $_REQUEST['editable'], $_REQUEST['references']);
 
 			echo json_encode(array(
 				'state' => 1,
@@ -278,13 +281,13 @@ class Plugin extends Pattern_Singleton
 			if (empty($_REQUEST['post_id'])) {
 				throw new \Exception('No post ID given');
 			}
-			$dictionaries = Bpi::init()->getDictionaries();
+			$dictionaries = ArticleExchange::init()->getDictionaries();
 			echo json_encode(array(
 				'state' => 1,
 				'html'  => Renderer::render_template('ajax-popup-push', array(
 					'postStatus' => PostStatus::init($_REQUEST['post_id']),
-					'categories' => $dictionaries['category'],
-					'audience'   => $dictionaries['audience']
+					'categories' => empty($dictionaries['category']) ? array() : $dictionaries['category'],
+					'audience'   => empty($dictionaries['audience']) ? array() : $dictionaries['audience'],
 				))
 			));
 		} catch

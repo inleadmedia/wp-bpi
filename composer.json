@@ -1,7 +1,7 @@
 {
-  "name": "bpi-plugin",
+  "name": "ae-plugin",
   "type": "wordpress-plugin",
-  "description": "BPI Wordpress Plugin.",
+  "description": "ArticleExchange Wordpress Plugin.",
   "keywords": [
     "wordpress"
   ],

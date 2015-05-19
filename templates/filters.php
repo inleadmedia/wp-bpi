@@ -9,7 +9,7 @@
  * @var $additionalParams
  */
 ?>
-<h2>BPI Library</h2>
+<h2>Article Exchange Library</h2>
 <div class="alignleft actions">
 	<form>
 		<?php foreach ($additionalParams as $paramName => $paramValue): ?>
@@ -34,7 +34,7 @@
 			<?php endforeach ?>
 		</select>
 
-		<p class="search-box bpi-style">
+		<p class="search-box ae-style">
 			<label class="screen-reader-text" for="post-search-input">Search:</label>
 			<input type="search" id="post-search-input" name="filter-search" value="<?php echo $searchText ?>">
 		</p>
@@ -44,8 +44,8 @@
 		?>
 
 		<?php if ($links): foreach ($links as $link): ?>
-			<input type="hidden" name="page" value="bpi-syndication"/>
-			<a href="<?php echo $link['link'] ?>" class="bpi-text-panel-block"><strong><?php echo $link['param'] ?>
+			<input type="hidden" name="page" value="ae-syndication"/>
+			<a href="<?php echo $link['link'] ?>" class="ae-text-panel-block"><strong><?php echo $link['param'] ?>
 					:</strong> <?php echo $link['value'] ?><span class="dashicons dashicons-no-alt"></span></a>
 		<?php endforeach;endif; ?>
 	</form>

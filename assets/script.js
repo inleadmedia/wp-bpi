@@ -1,11 +1,11 @@
 jQuery(function ($) {
-	var $pushToBpiButton = $('#push-to-bpi');
-	$pushToBpiButton.click(function () {
+	var $pushToAeButton = $('#push-to-ae');
+	$pushToAeButton.click(function () {
 		$.ajax({
 			url: ajaxurl,
 			type: 'POST',
 			dataType: 'json',
-			data: 'post_id=' + $pushToBpiButton.data('post-id') + '&action=check_push_to_bpi',
+			data: 'post_id=' + $pushToAeButton.data('post-id') + '&action=check_push_to_ae',
 			success: function (data) {
 				if (!data.state) {
 					$popupFunction(data.message, 'Error :(');
@@ -15,8 +15,8 @@ jQuery(function ($) {
 				$preparingPopup = $popupFunction(data.html, 'Preparing to syndicate', {
 					"Push": function () {
 						var $options = {
-							'post_id': $pushToBpiButton.data('post-id'),
-							'action' : 'push_to_bpi',
+							'post_id': $pushToAeButton.data('post-id'),
+							'action' : 'push_to_ae',
 							'images': $('#images', $preparingPopup).is(':checked') ? 1 : 0,
 							'anonymous': $('#anonymous', $preparingPopup).is(':checked') ? 1 : 0,
 							'references': $('#references', $preparingPopup).is(':checked') ? 1 : 0,
@@ -38,7 +38,7 @@ jQuery(function ($) {
 									$popupFunction(data.message, 'Error :(');
 									return;
 								}
-								$pushToBpiButton.parents('.inside').html(data.text);
+								$pushToAeButton.parents('.inside').html(data.text);
 							}
 						});
 					},
@@ -53,13 +53,13 @@ jQuery(function ($) {
 		});
 	});
 
-	$('.pull_from_bpi').click(function () {
-		var $bpiNodePullButton = $(this);
+	$('.pull_from_ae').click(function () {
+		var $aeNodePullButton = $(this);
 		$.ajax({
 			url: ajaxurl,
 			type: 'GET',
 			dataType: 'json',
-			data: 'bpi-node-id=' + $bpiNodePullButton.data('node-id') + '&action=check_pull_from_bpi',
+			data: 'ae-node-id=' + $aeNodePullButton.data('node-id') + '&action=check_pull_from_ae',
 			success: function (data) {
 				if (!data.state) {
 					$popupFunction(data.message, 'Error :(');
@@ -67,6 +67,13 @@ jQuery(function ($) {
 				}
 				var $preparingPopup;
 				$preparingPopup = $popupFunction(data.html, 'Preparing to syndicate', {
+					"Preview": function()
+					{
+						$preparingPopup.html('<h2>'+data.title+'</h2>'+data.body+'<p align="center"><button type="button" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-state-hover ui-state-active" role="button" id="close_preview"><span class="ui-button-text">Close</span></button>');
+						$preparingPopup.find('#close_preview').click(function(){
+							$preparingPopup.html(data.html)
+						});
+					},
 					"Syndicate": function () {
 						var $images = [];
 						var imageList = $('.selected-images:checked', $preparingPopup);
@@ -84,8 +91,8 @@ jQuery(function ($) {
 							type: 'GET',
 							dataType: 'json',
 							data: {
-								'bpi-node-id': $bpiNodePullButton.data('node-id'),
-								'action': 'pull_from_bpi',
+								'ae-node-id': $aeNodePullButton.data('node-id'),
+								'action': 'pull_from_ae',
 								'images': $images
 							},
 							success: function (data) {

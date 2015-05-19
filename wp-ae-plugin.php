@@ -1,20 +1,19 @@
 <?php
 /**
- * Plugin Name: BPI
+ * Plugin Name: Article Exchange
  * Plugin URI: http://fruitware.ru
- * Description: BPI System Integration Plugin
+ * Description: AE System Integration Plugin
  * Version: 0.0.1
  * Author: Fruitware
  * Author URI: http://fruitware.ru
- * Text Domain: bpi
+ * Text Domain: ae
  * Domain Path: /locale/
  * License: GPLv2 or later
  */
-//register_activation_hook(__FILE__, '');
-//register_deactivation_hook(__FILE__, 'fwds_slider_deactivation');
+
 require_once 'init.php';
 
-WordpressBpi\Plugin::init();
+WordpressAe\Plugin::init();
 
 /*
 

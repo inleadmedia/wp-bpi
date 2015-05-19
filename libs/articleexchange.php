@@ -1,25 +1,25 @@
 <?php
-namespace WordpressBpi;
+namespace WordpressAe;
 
-class Bpi extends \Fruitframe\Pattern_Singleton
+class ArticleExchange extends \Fruitframe\Pattern_Singleton
 {
 	/**
 	 * @var \Bpi
 	 */
-	protected $_bpi;
+	protected $_ae;
 	protected $_amountPerPage = 10;
 
 	protected function __construct()
 	{
-		if (intval(\wpJediOptions::get_option('bpi_options', 'content_per_page')) > 0) {
-			$this->_amountPerPage = intval(\wpJediOptions::get_option('bpi_options', 'content_per_page'));
+		if (intval(\wpJediOptions::get_option('ae_options', 'content_per_page')) > 0) {
+			$this->_amountPerPage = intval(\wpJediOptions::get_option('ae_options', 'content_per_page'));
 		}
-		$this->_bpi = new \Bpi
+		$this->_ae = new \Bpi
 		(
-			\wpJediOptions::get_option('bpi_options', 'url'),
-			\wpJediOptions::get_option('bpi_options', 'agency_id'),
-			\wpJediOptions::get_option('bpi_options', 'public_key'),
-			\wpJediOptions::get_option('bpi_options', 'secret_key')
+			\wpJediOptions::get_option('ae_options', 'url'),
+			\wpJediOptions::get_option('ae_options', 'agency_id'),
+			\wpJediOptions::get_option('ae_options', 'public_key'),
+			\wpJediOptions::get_option('ae_options', 'secret_key')
 		);
 	}
 
@@ -44,7 +44,7 @@ class Bpi extends \Fruitframe\Pattern_Singleton
 			'agency_id' => $agency_id,
 			'author'    => $author,
 		);
-		return $this->_bpi->searchNodes(
+		return $this->_ae->searchNodes(
 			array(
 				'amount' => $this->_amountPerPage,
 				'offset' => $offset,
@@ -136,7 +136,7 @@ class Bpi extends \Fruitframe\Pattern_Singleton
 
 	public function getDictionaries()
 	{
-		return $this->_bpi->getDictionaries();
+		return $this->_ae->getDictionaries();
 	}
 
 	public function getAmountPerPage()
@@ -144,19 +144,19 @@ class Bpi extends \Fruitframe\Pattern_Singleton
 		return $this->_amountPerPage;
 	}
 
-	public function getNode($bpiNodeId)
+	public function getNode($aeNodeId)
 	{
 		try {
-			return $this->_bpi->getNode($bpiNodeId);
+			return $this->_ae->getNode($aeNodeId);
 		} catch ( \Exception $exception ) {
 			//Somehow save errors
 			return null;
 		}
 	}
 
-	public function pushNode($bpiNode)
+	public function pushNode($aeNode)
 	{
-		$push_result = $this->_bpi->push($bpiNode)->getProperties();
+		$push_result = $this->_ae->push($aeNode)->getProperties();
 
 		if (empty($push_result['id']))
 		{
