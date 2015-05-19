@@ -8,7 +8,7 @@
 		<div class="misc-pub-section misc-pub-post-status">
 			<label for="post_status">Export:</label>
 			<span id="post-status-display" style="vertical-align: middle;">
-				<a href="javascript:void(0);" id="push-to-bpi" data-post-id="<?php echo $value ?>">Push to BPI</a>
+				<a href="javascript:void(0);" id="push-to-ae" data-post-id="<?php echo $value ?>">Push to Article Exchange</a>
 			</span>
 		</div>
 	<?php else: ?>

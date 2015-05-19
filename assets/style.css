@@ -1,10 +1,10 @@
-.bpi-style
+.ae-style
 {
 	float: left !important;
 	margin-right: 6px !important;
 }
 
-.bpi-text-panel-block
+.ae-text-panel-block
 {
 	float: right;
 	display: block;
@@ -15,7 +15,7 @@
 	text-decoration: none;
 }
 
-.bpi-text-panel-block span
+.ae-text-panel-block span
 {
 	border: 1px solid #555;
 	border-radius: 14px;
@@ -29,11 +29,11 @@
 	/*visibility: hidden;*/
 }
 
-.bpi-text-panel-block:hover
+.ae-text-panel-block:hover
 {
 	color: #555;
 }
-.bpi-text-panel-block:hover span
+.ae-text-panel-block:hover span
 {
 	background: #36A3CA;
 	border-color: #36A3CA;

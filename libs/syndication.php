@@ -1,5 +1,5 @@
 <?php
-namespace WordpressBpi;
+namespace WordpressAe;
 
 use Fruitframe\Renderer;
 
@@ -45,7 +45,7 @@ class SyndicationTable extends \WP_List_Table
 			'filter-agency-id' => sanitize_text_field(@$_GET['filter-agency-id']),
 			'filter-agency'    => sanitize_text_field(@$_GET['filter-agency']),
 			'filter-author'    => sanitize_text_field(@$_GET['filter-author']),
-			'page'             => 'bpi-syndication',
+			'page'             => 'ae-syndication',
 		);
 		if ( ! empty($param) && array_key_exists($param, $params)) {
 			if ( ! $value) {
@@ -69,7 +69,7 @@ class SyndicationTable extends \WP_List_Table
 	{
 		if ('top' == $which) {
 
-			$dictionaries = Bpi::init()->getDictionaries();
+			$dictionaries = ArticleExchange::init()->getDictionaries();
 
 			$selectedAuthor     = sanitize_text_field(@$_GET['filter-author']);
 			$selectedAgency     = sanitize_text_field(@$_GET['filter-agency-id']);
@@ -97,14 +97,14 @@ class SyndicationTable extends \WP_List_Table
 			}
 
 			echo Renderer::render_template('filters', array(
-				'categories'       => $dictionaries['category'],
-				'audience'         => $dictionaries['audience'],
+				'categories'       => empty($dictionaries['category']) ? array() : $dictionaries['category'],
+				'audience'         => empty($dictionaries['audience']) ? array() : $dictionaries['audience'],
 				'selectedAudience' => $selectedAudience,
 				'selectedCategory' => $selectedCategory,
 				'searchText'       => $searchText,
 				'links'            => $links,
 				'additionalParams' => array(
-					'page'             => 'bpi-syndication',
+					'page'             => 'ae-syndication',
 					'filter-agency-id' => $selectedAgency,
 					'filter-agency'    => $selectedAgencyName,
 					'filter-author'    => $selectedAuthor,
@@ -159,17 +159,17 @@ class SyndicationTable extends \WP_List_Table
 		$selectedAuthor   = sanitize_text_field(@$_GET['filter-author']);
 		$selectedAgency   = sanitize_text_field(@$_GET['filter-agency-id']);
 
-		$bpiResponse = Bpi::init()->search($paged, $orderby, $order, $searchText, $selectedAudience,
+		$aeResponse = ArticleExchange::init()->search($paged, $orderby, $order, $searchText, $selectedAudience,
 			$selectedCategory,
 			$selectedAgency, $selectedAuthor);
-		$this->items = $bpiResponse;
+		$this->items = $aeResponse;
 
 
 		/* -- Pagination parameters -- */
-		$totalitems = $bpiResponse->total;
+		$totalitems = $aeResponse->total;
 
 		//How many to display per page?
-		$perpage = Bpi::init()->getAmountPerPage();
+		$perpage = ArticleExchange::init()->getAmountPerPage();
 
 		//How many pages do we have in total?
 		$totalpages = ceil($totalitems / $perpage);
@@ -224,10 +224,10 @@ class SyndicationTable extends \WP_List_Table
 						}
 						break;
 					case '_actions':
-						$value = ($postStatus = PostStatus::findByBpiId($properties['id'])) ?
+						$value = ($postStatus = PostStatus::findByAeId($properties['id'])) ?
 							'Already pulled. <a href="' . get_admin_url(null,
 								'post.php?action=edit&post=' . $postStatus->getPostObject()->ID) . '">Check</a>' :
-							'<a href="javascript:void(0);" data-node-id="' . $properties['id'] . '" class="pull_from_bpi">Pull</a>';
+							'<a href="javascript:void(0);" data-node-id="' . $properties['id'] . '" class="pull_from_ae">Pull</a>';
 						break;
 					case
 					'_details':
