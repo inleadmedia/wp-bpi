@@ -108,12 +108,13 @@ jQuery(function ($) {
 					"Cancel": function () {
 						$(this).dialog('close');
 					}
-				});
+				}, 700);
 			}
 		});
 	});
 
-	$popupFunction = function ($content, $title, $buttons) {
+	$popupFunction = function ($content, $title, $buttons, $minWidth) {
+		$minWidth = $minWidth == null ? 200 : $minWidth;
 		var $info = $($content);
 		$info.attr('title', $title);
 		if (!$buttons) {
@@ -124,6 +125,7 @@ jQuery(function ($) {
 			}
 		}
 		$info.dialog({
+			'minWidth': $minWidth,
 			'dialogClass': 'wp-dialog',
 			'modal': true,
 			'autoOpen': false,
