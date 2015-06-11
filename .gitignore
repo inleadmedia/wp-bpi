@@ -5,8 +5,8 @@
 *.iml
 
 ## Directory-based project format:
-.idea/
-.DS_Store/
+.idea
+.DS_Store
 # if you remove the above rule, at least ignore the following:
 
 # User-specific stuff:
