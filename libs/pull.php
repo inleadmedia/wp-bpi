@@ -32,14 +32,16 @@ class Pull extends \Fruitframe\Pattern_Singleton
 		$aeProperties = $node->getProperties();
 		$postId        = wp_insert_post(array(
 			'post_title'   => $aeProperties['title'],
-			'post_content' => $aeProperties['body'],
+			'post_content' => tagAuthorFunctional::clearMatches($aeProperties['body']),
 			'post_excerpt' => $aeProperties['teaser'],
 			'post_date'    => $aeProperties['creation'],
 			'post_status'  => 'draft',
 		));
+
 		if ( ! $postId) {
 			return false;
 		}
+
 		$postStatus = PostStatus::init($postId);
 		$postStatus->pullFromAe($aeNodeId, $images, $aeProperties);
 

@@ -222,7 +222,7 @@ class Plugin extends Pattern_Singleton
 				'assets'        => $nodeInfo['assets'],
 			)),
 			'title' => $nodeInfo['properties']['title'],
-			'body'  => $nodeInfo['properties']['body'],
+			'body'  => tagAuthorFunctional::clearMatches($nodeInfo['properties']['body']),
 		)));
 	}
 
