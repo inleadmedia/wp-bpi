@@ -191,6 +191,18 @@ class PostStatus
 		add_post_meta($this->_postId, 'ae_category', $nodeProperties['category'], true);
 		add_post_meta($this->_postId, 'ae_audience', $nodeProperties['audience'], true);
 
+		if (tagAuthorFunctional::isIndexdataActive())
+		{
+			if (is_array($tags = tagAuthorFunctional::parseTags($nodeProperties['body'])))
+			{
+				wp_set_post_tags($this->_postId, $tags);
+			}
+			if ($author = tagAuthorFunctional::parseAuthor($nodeProperties['body']))
+			{
+				update_post_meta($this->_postId, 'indexdata_artist', $author);
+			}
+		}
+
 
 		if ($images) {
 			$thumbnailSet = false;
@@ -312,9 +324,26 @@ class PostStatus
 		/*		if ( ! empty($body_field) && isset($body_field['#items'][0]['safe_value'])) {
 					$body = $body_field['#items'][0]['safe_value'];
 				}*/
-		$body = apply_filters('the_content', $this->_postData->post_content);
+		$body = html_entity_decode(apply_filters('the_content', $this->_postData->post_content));
 
-		$ae_content['body']   = html_entity_decode($body);
+		if (tagAuthorFunctional::isIndexdataActive())
+		{
+			if (is_array($tags = wp_get_post_tags($this->_postId)) && count($tags))
+			{
+				$resultTags =  array();
+				foreach($tags as $tag) {
+					$resultTags[] = $tag->name;
+				}
+				$body = tagAuthorFunctional::includeTags($body, $resultTags);
+			}
+			if ($author = get_post_meta($this->_postId, 'indexdata_artist', TRUE))
+			{
+				$body = tagAuthorFunctional::includeAuthor($body, $author);
+			}
+		}
+
+
+		$ae_content['body']   = $body;
 		$ae_content['teaser'] = html_entity_decode($teaser);
 		$dt                    = new \DateTime();
 		$dt->setTimestamp(strtotime($this->_postData->post_date));
