@@ -198,14 +198,14 @@ class Plugin extends Pattern_Singleton
 
 	public function scriptsEnqueue($hook)
 	{
-		wp_enqueue_script('ae-script', plugins_url('wp-ae-plugin/assets/script.js'), array('jquery-ui-dialog'));
+		wp_enqueue_script('ae-script', plugins_url(WP_AE_PLUGIN_NAME.'/assets/script.js'), array('jquery-ui-dialog'));
 		wp_enqueue_style('wp-jquery-ui-dialog');
 
 		/**
 		 * Apply it only on post.php page
 		 */
 		if ('post.php' == $hook || 'ae-options_page_ae-syndication' == $hook) {
-			wp_enqueue_style('ae-style', plugins_url('wp-ae-plugin/assets/style.css'));
+			wp_enqueue_style('ae-style', plugins_url(WP_AE_PLUGIN_NAME.'/assets/style.css'));
 			return;
 		}
 	}

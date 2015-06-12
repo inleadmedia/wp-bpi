@@ -1,6 +1,7 @@
 <?php
 
 define('FRUITFRAME_TEMPLATES', plugin_dir_path(__FILE__).'templates/');
+define('WP_AE_PLUGIN_NAME', basename(plugin_dir_path(__FILE__)));
 
 require_once 'vendor/autoload.php';
 require_once 'vendor/bpi/sdk/Bpi/Sdk/Bpi.php';
