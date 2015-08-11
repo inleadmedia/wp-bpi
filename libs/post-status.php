@@ -343,6 +343,11 @@ class PostStatus
 		}
 
 
+                // Some articles are not right encoded.
+                // Forcing to UTF-8 encode.
+                $current_encoding = mb_detect_encoding($body, 'auto');
+                $body = iconv($current_encoding, 'UTF-8', $body);
+
 		$ae_content['body']   = $body;
 		$ae_content['teaser'] = html_entity_decode($teaser);
 		$dt                    = new \DateTime();
