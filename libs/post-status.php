@@ -343,6 +343,11 @@ class PostStatus
 		}
 
 
+                // Some articles are not right encoded.
+                // Forcing to UTF-8 encode.
+                $current_encoding = mb_detect_encoding($body, 'auto');
+                $body = iconv($current_encoding, 'UTF-8', $body);
+
 		$ae_content['body']   = $body;
 		$ae_content['teaser'] = html_entity_decode($teaser);
 		$dt                    = new \DateTime();
@@ -356,27 +361,7 @@ class PostStatus
 		$ae_content['authorship']        = $authorship;
 		$ae_content['images']            = array();
 
-		if ($with_images) {
-			foreach (fruitframe_get_attachments($this->_postId) as $image) {
-				$ae_content['images'][] = array(
-					'path'  => fruitframe_get_attachment_image_src($image->ID, 'full'),
-					'alt'   => '',
-					'title' => '',
-				);
-			}
-			if (empty($ae_content['images']))
-			{
-				if (($thumbId = get_post_thumbnail_id($this->_postId)))
-				{
-					$ae_content['images'][] = array(
-						'path'  => fruitframe_get_attachment_image_src($thumbId, 'full'),
-						'alt'   => '',
-						'title' => '',
-					);
-				}
-
-			}
-		} else {
+		if (!$with_images) {
 			$ae_content['body'] = preg_replace(
 				'~(<p>)?<img.+?/>(</p>)?~is',
 				'',
