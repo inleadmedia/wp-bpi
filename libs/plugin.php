@@ -50,7 +50,27 @@ class Plugin extends Pattern_Singleton
 					"label" => "Content per page in Syndication",
 					"type"  => "text",
 					"name"  => "content_per_page",
-				)
+				),
+				"html_strip_empty" => array(
+					'label' => 'HTML | Strip empty tags',
+					'type' => "checkbox",
+					"name" => 'strip_empty'
+				),
+				"html_remove_attributes" => array(
+					'label' => 'HTML | Remove attributes',
+					'type' => "checkbox",
+					"name" => 'html_remove_attributes'
+				),
+				"html_strip_tags" => array(
+					'label' => 'HTML | Strip Tags',
+					'type' => "text",
+					"name" => 'html_strip_tags'
+				),
+				"html_skip_iframes" => array(
+					'label' => 'HTML | Skip Iframes',
+					'type' => "checkbox",
+					"name" => 'html_skip_iframes'
+				),
 			)
 		));
 		//$postStatus = new PostStatus();

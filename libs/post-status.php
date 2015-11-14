@@ -194,11 +194,11 @@ class PostStatus
 		if ( ! ArticleExchange::init()->deleteNode($this->_aeMeta['ae_id'])) {
 			return false;
 		}
-		foreach($this->_aeMeta as $key => $value)
-		{
+		foreach ($this->_aeMeta as $key => $value) {
 			delete_post_meta($this->_postId, $key, $value);
 			$this->_aeMeta[$key] = null;
 		}
+
 		return true;
 	}
 
@@ -341,7 +341,7 @@ class PostStatus
 		/*		if ( ! empty($body_field) && isset($body_field['#items'][0]['safe_value'])) {
 					$body = $body_field['#items'][0]['safe_value'];
 				}*/
-		$body = html_entity_decode(apply_filters('the_content', $this->_postData->post_content));
+		$body = html_entity_decode(apply_filters('the_content', strip_shortcodes($this->_postData->post_content)));
 
 		if (tagAuthorFunctional::isIndexdataActive()) {
 			if (is_array($tags = wp_get_post_tags($this->_postId)) && count($tags)) {
@@ -357,12 +357,7 @@ class PostStatus
 		}
 
 
-		// Some articles are not right encoded.
-		// Forcing to UTF-8 encode.
-		$current_encoding = mb_detect_encoding($body, 'auto');
-		$body             = iconv($current_encoding, 'UTF-8', $body);
-
-		$ae_content['body']   = $body;
+		$ae_content['body']   = $this->_clearPostContent($body);
 		$ae_content['teaser'] = html_entity_decode($teaser);
 		$dt                   = new \DateTime();
 		$dt->setTimestamp(strtotime($this->_postData->post_date));
@@ -380,6 +375,45 @@ class PostStatus
 		}
 
 		return $ae_content;
+	}
+
+	/**
+	 * Differnet options of content-stripping system
+	 * @param $content
+	 *
+	 * @return mixed|string
+	 */
+	public function _clearPostContent($content)
+	{
+		$current_encoding = mb_detect_encoding($content, 'auto');
+		$content          = iconv($current_encoding, 'UTF-8', $content);
+		if (\wpJediOptions::get_option('ae_options', 'html_remove_attributes')) {
+			$content = preg_replace("/<([a-z][a-z0-9]*)[^>]*?(\/?)>/i", '<$1$2>', $content);
+		}
+		if (\wpJediOptions::get_option('ae_options', 'html_strip_empty')) {
+			$content = preg_replace('/<(\w+)\b(?:\s+[\w\-.:]+(?:\s*=\s*(?:"[^"]*"|"[^"]*"|[\w\-.:]+))?)*\s*\/?>\s*<\/\1\s*>/', '<$1$2>', $content);
+			$content = preg_replace("/<p[^>]*>[\s|&nbsp;]*<\/p>/", '', $content);
+		}
+		if (\wpJediOptions::get_option('ae_options', 'html_strip_tags')) {
+			$tagsList = explode(',', \wpJediOptions::get_option('ae_options', 'html_strip_tags'));
+			if ($tagsList)
+			{
+				foreach($tagsList as $tag)
+				{
+					$tag = trim($tag);
+					$content = preg_replace('/<'.$tag.'[^>]*>/i', '', $content);
+					$content = preg_replace('/<\/'.$tag.'>/i', '', $content);
+				}
+			}
+		}
+		$content = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $content);
+
+		if (!\wpJediOptions::get_option('ae_options', 'html_skip_iframes')) {
+			$content = preg_replace('/<iframe.*?\/iframe>/i','', $content);
+			$content = preg_replace('/<embed.+?<\/embed>/im', "", $content);
+			$content = preg_replace('/<object.+?<\/object>/im', "", $content);
+		}
+		return $content;
 	}
 
 	protected function _checkAe()
