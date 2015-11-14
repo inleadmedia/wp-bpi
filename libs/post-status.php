@@ -1,8 +1,6 @@
 <?php
 namespace WordpressAe;
 
-use Fruitframe\Renderer;
-
 /**
  * Using Singleton Pattern for the list of posts
  * Helper-class to extend Wordpress Post with all AE-staff.
@@ -53,6 +51,7 @@ class PostStatus
 		if ( ! array_key_exists($postId, self::$_posts)) {
 			self::$_posts[$postId] = new self($postId);
 		}
+
 		return self::$_posts[$postId];
 	}
 
@@ -72,6 +71,7 @@ class PostStatus
 		)))) {
 			return self::init($results[0]->ID);
 		}
+
 		return false;
 	}
 
@@ -81,9 +81,9 @@ class PostStatus
 	public function getTableState()
 	{
 		if ($this->_checkAe()) {
-			return 'Already pulled. <a href="' . get_admin_url(null,
-				'post.php?action=edit&post=' . $this->_postId) . '">Check</a>';
+			return 'Already pulled. <a href="' . get_admin_url(null, 'post.php?action=edit&post=' . $this->_postId) . '">Check</a>';
 		}
+
 		return '';
 	}
 
@@ -94,23 +94,28 @@ class PostStatus
 	public function getMetaParams()
 	{
 		$params = array(
-			'export'     => $this->_postId
+			'export' => $this->_postId
 		);
 		if ( ! $this->_checkAe()) {
 			$params['AE Status'] = 'Not in AE';
+
 			return $params;
 		}
+		if ($this->_aeMeta['ae_push_status']) {
+			$params['delete'] = $this->_postId;
+		}
 		$params['AE Status'] = 'In AE';
-		$params['AE ID'] = $this->_aeMeta['ae_id'];
-		if (($params['Pull status'] = (int)$this->_aeMeta['ae_pull_status'])) {
+		$params['AE ID']     = $this->_aeMeta['ae_id'];
+		if (($params['Pull status'] = (int) $this->_aeMeta['ae_pull_status'])) {
 			$params['Pull date'] = date('d.m.Y H:i', $this->_aeMeta['ae_pull_timestamp']);
 		}
-		if (($params['Push status'] = (int)$this->_aeMeta['ae_push_status'])) {
+		if (($params['Push status'] = (int) $this->_aeMeta['ae_push_status'])) {
 			$params['Push date'] = date('d.m.Y H:i', $this->_aeMeta['ae_push_timestamp']);
 			unset($params['export']);
 		}
 		$params['AE Category'] = $this->_aeMeta['ae_category'];
 		$params['AE Audience'] = $this->_aeMeta['ae_audience'];
+
 		return $params;
 	}
 
@@ -128,9 +133,9 @@ class PostStatus
 			$response .= 'Pulled at ' . date('d.m.Y H:i', $this->_aeMeta['ae_pull_timestamp']);
 		}
 		if ($this->_aeMeta['ae_push_status']) {
-			$response .= ($response ? '<br/>' : '') . 'Pushed at ' . date('d.m.Y H:i',
-					$this->_aeMeta['ae_push_timestamp']);
+			$response .= ($response ? '<br/>' : '') . 'Pushed at ' . date('d.m.Y H:i', $this->_aeMeta['ae_push_timestamp']);
 		}
+
 		return $response;
 	}
 
@@ -142,12 +147,12 @@ class PostStatus
 		return $this->_postData;
 	}
 
-	public function getAeDate(
-		$format = false
-	) {
+	public function getAeDate($format = false)
+	{
 		if ( ! ($date = get_post_meta($this->_postId, 'ae_timestamp', true))) {
 			return false;
 		}
+
 		return $format ? date($format, $date) : $date;
 	}
 
@@ -163,7 +168,7 @@ class PostStatus
 	 */
 	public function pushToAe($category, $audience, $images, $anonymous, $editable, $references)
 	{
-		$aeData = $this->_prepareToAe($category, $audience, $images, $anonymous, $editable, $references);
+		$aeData     = $this->_prepareToAe($category, $audience, $images, $anonymous, $editable, $references);
 		$pushStatus = ArticleExchange::init()->pushNode($aeData);
 		if ($pushStatus) {
 			add_post_meta($this->_postId, 'ae', 1, true);
@@ -174,6 +179,27 @@ class PostStatus
 			add_post_meta($this->_postId, 'ae_audience', $audience, true);
 
 		}
+	}
+
+	/**
+	 * Method to delete record from AE
+	 *
+	 * @return bool
+	 */
+	public function deleteFromAe()
+	{
+		if ( ! $this->_checkAe()) {
+			return false;
+		}
+		if ( ! ArticleExchange::init()->deleteNode($this->_aeMeta['ae_id'])) {
+			return false;
+		}
+		foreach($this->_aeMeta as $key => $value)
+		{
+			delete_post_meta($this->_postId, $key, $value);
+			$this->_aeMeta[$key] = null;
+		}
+		return true;
 	}
 
 	/**
@@ -191,14 +217,11 @@ class PostStatus
 		add_post_meta($this->_postId, 'ae_category', $nodeProperties['category'], true);
 		add_post_meta($this->_postId, 'ae_audience', $nodeProperties['audience'], true);
 
-		if (tagAuthorFunctional::isIndexdataActive())
-		{
-			if (is_array($tags = tagAuthorFunctional::parseTags($nodeProperties['body'])))
-			{
+		if (tagAuthorFunctional::isIndexdataActive()) {
+			if (is_array($tags = tagAuthorFunctional::parseTags($nodeProperties['body']))) {
 				wp_set_post_tags($this->_postId, $tags);
 			}
-			if ($author = tagAuthorFunctional::parseAuthor($nodeProperties['body']))
-			{
+			if ($author = tagAuthorFunctional::parseAuthor($nodeProperties['body'])) {
 				update_post_meta($this->_postId, 'indexdata_artist', $author);
 			}
 		}
@@ -261,21 +284,15 @@ class PostStatus
 	 * @todo Add a hook allowing changing the values before they are sent to AE.
 	 * @todo Split this function into smaller parts (ex: images, texts).
 	 */
-	public function _prepareToAe(
-		$category,
-		$audience,
-		$with_images = false,
-		$authorship = false,
-		$editable = 1,
-		$with_refs = false
-	) {
+	public function _prepareToAe($category, $audience, $with_images = false, $authorship = false, $editable = 1, $with_refs = false)
+	{
 		$ae_content = array();
 
 		$ae_content['agency_id'] = \wpJediOptions::get_option('ae_options', 'agency_id');
 		$ae_content['local_id']  = $this->_postId;
-		$ae_content['ae_id']    = get_post_meta($this->_postId, 'ae_id', true);
+		$ae_content['ae_id']     = get_post_meta($this->_postId, 'ae_id', true);
 
-		$ae_content['firstname'] = $ae_content['lastname']  = '';
+		$ae_content['firstname'] = $ae_content['lastname'] = '';
 
 		if ($authorship) {
 			$user                    = get_user_by('id', $this->_postData->post_author);
@@ -283,7 +300,7 @@ class PostStatus
 		}
 
 		$ae_content['title'] = $this->_postData->post_title;
-		$teaser               = $this->_postData->post_excerpt ? $this->_postData->post_excerpt : fruitframe_truncate($this->_postData->post_content);
+		$teaser              = $this->_postData->post_excerpt ? $this->_postData->post_excerpt : fruitframe_truncate($this->_postData->post_content);
 
 
 		/*		$teaser_field = $wpPost->post_excerpt;
@@ -326,31 +343,28 @@ class PostStatus
 				}*/
 		$body = html_entity_decode(apply_filters('the_content', $this->_postData->post_content));
 
-		if (tagAuthorFunctional::isIndexdataActive())
-		{
-			if (is_array($tags = wp_get_post_tags($this->_postId)) && count($tags))
-			{
-				$resultTags =  array();
-				foreach($tags as $tag) {
+		if (tagAuthorFunctional::isIndexdataActive()) {
+			if (is_array($tags = wp_get_post_tags($this->_postId)) && count($tags)) {
+				$resultTags = array();
+				foreach ($tags as $tag) {
 					$resultTags[] = $tag->name;
 				}
 				$body = tagAuthorFunctional::includeTags($body, $resultTags);
 			}
-			if ($author = get_post_meta($this->_postId, 'indexdata_artist', TRUE))
-			{
+			if ($author = get_post_meta($this->_postId, 'indexdata_artist', true)) {
 				$body = tagAuthorFunctional::includeAuthor($body, $author);
 			}
 		}
 
 
-                // Some articles are not right encoded.
-                // Forcing to UTF-8 encode.
-                $current_encoding = mb_detect_encoding($body, 'auto');
-                $body = iconv($current_encoding, 'UTF-8', $body);
+		// Some articles are not right encoded.
+		// Forcing to UTF-8 encode.
+		$current_encoding = mb_detect_encoding($body, 'auto');
+		$body             = iconv($current_encoding, 'UTF-8', $body);
 
 		$ae_content['body']   = $body;
 		$ae_content['teaser'] = html_entity_decode($teaser);
-		$dt                    = new \DateTime();
+		$dt                   = new \DateTime();
 		$dt->setTimestamp(strtotime($this->_postData->post_date));
 		$ae_content['creation']          = $dt->format(\DateTime::W3C);
 		$ae_content['type']              = 'post';
@@ -361,12 +375,8 @@ class PostStatus
 		$ae_content['authorship']        = $authorship;
 		$ae_content['images']            = array();
 
-		if (!$with_images) {
-			$ae_content['body'] = preg_replace(
-				'~(<p>)?<img.+?/>(</p>)?~is',
-				'',
-				$ae_content['body']
-			);
+		if ( ! $with_images) {
+			$ae_content['body'] = preg_replace('~(<p>)?<img.+?/>(</p>)?~is', '', $ae_content['body']);
 		}
 
 		return $ae_content;
@@ -377,6 +387,7 @@ class PostStatus
 		foreach ($this->_aeMeta as $key => $value) {
 			$this->_aeMeta[$key] = get_post_meta($this->_postId, $key, true);
 		}
+
 		return $this->_aeMeta['ae'];
 	}
 }
