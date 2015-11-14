@@ -15,16 +15,12 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 			$this->_amountPerPage = intval(\wpJediOptions::get_option('ae_options', 'content_per_page'));
 		}
 		$this->_ae = new \Bpi
-		(
-			\wpJediOptions::get_option('ae_options', 'url'),
-			\wpJediOptions::get_option('ae_options', 'agency_id'),
-			\wpJediOptions::get_option('ae_options', 'public_key'),
-			\wpJediOptions::get_option('ae_options', 'secret_key')
-		);
+		(\wpJediOptions::get_option('ae_options', 'url'), \wpJediOptions::get_option('ae_options', 'agency_id'), \wpJediOptions::get_option('ae_options', 'public_key'), \wpJediOptions::get_option('ae_options', 'secret_key'));
 	}
 
 	/**
 	 * @todo: add try-catch
+	 *
 	 * @param int    $page
 	 * @param string $sort_by
 	 * @param string $sort
@@ -36,16 +32,17 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 	 *
 	 * @return \Bpi\Sdk\NodeList
 	 */
-	public function search($page = 1, $sort_by = 'pushed', $sort = 'desc', $search = '', $audience = '', $category = '', $agency_id = '', $author = '') {
-		$offset  = ($page-1) * $this->_amountPerPage;
+	public function search($page = 1, $sort_by = 'pushed', $sort = 'desc', $search = '', $audience = '', $category = '', $agency_id = '', $author = '')
+	{
+		$offset  = ($page - 1) * $this->_amountPerPage;
 		$filters = array(
 			'category'  => $category,
 			'audience'  => $audience,
 			'agency_id' => $agency_id,
 			'author'    => $author,
 		);
-		return $this->_ae->searchNodes(
-			array(
+
+		return $this->_ae->searchNodes(array(
 				'amount' => $this->_amountPerPage,
 				'offset' => $offset,
 				'filter' => $filters,
@@ -53,8 +50,7 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 					$sort_by => $sort,
 				),
 				'search' => $search,
-			)
-		);
+			));
 		/**
 		 * Parses the BPI search result into more simpler structures.
 		 *
@@ -122,6 +118,34 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 		 * 'total_count' => isset($response->total) ? $response->total : 0,
 		 * 'assets' => (count($assets) > 0) ? $assets : array(),
 		 * 'editable' => !empty($current_item['editable']),
+		 *
+		 *
+		 *
+		 *
+		 *
+		 * function bpi_error_message($exception, $level) {
+		 * // Build message based on error code.
+		 * $c = $exception->getCode();
+		 * switch ($exception->getCode()) {
+		 * case 422:
+		 * $msg = t('Similar resource allready exists in the BPI service.');
+		 * break;
+		 *
+		 * case 406:
+		 * $msg = t('Trying to syndicate content by owner who already did that is not allowed.');
+		 * break;
+		 *
+		 * case 500;
+		 * $msg = t('Internal server error. Please try once more or contact your site administrator.');
+		 * break;
+		 *
+		 * default:
+		 * $msg = t('Error occurred when pushing content to the BPI data well. Check reports for more information.');
+		 * break;
+		 * }
+		 *
+		 *
+		 *
 		 * );
 		 * }
 		 *
@@ -158,10 +182,19 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 	{
 		$push_result = $this->_ae->push($aeNode)->getProperties();
 
-		if (empty($push_result['id']))
-		{
-			return FALSE;
+		if (empty($push_result['id'])) {
+			return false;
 		}
+
 		return $push_result;
+	}
+
+	public function deleteNode($aeNodeId)
+	{
+		try {
+			return $this->_ae->deleteNode($aeNodeId);
+		} catch ( \Exception $exception ) {
+			return null;
+		}
 	}
 }

@@ -17,43 +17,62 @@ class Plugin extends Pattern_Singleton
 	protected function __construct()
 	{
 		$this->_page_options = new \wpJediOptions(array(
-				"parent_page_slug" => 'ae-syndication',
-				"page_title"       => "Settings",
-				"page_menu_title"  => "Settings",
-				"page_slug"        => "ae-options",
-				"page_note"        => "",
-				"options_name"     => "ae_options",
-				"options_group"    => "ae_options_group",
-				"options"          => array(
-					"agency_id"        => array(
-						"label" => "Agency ID",
-						"name"  => "agency_id",
-						"type"  => "text",
-						//						"description" => "Agency ID which",
-					),
-					"secret_key"       => array(
-						"label" => "Secret Key",
-						"type"  => "text",
-						"name"  => "secret_key",
-					),
-					"public_key"       => array(
-						"label" => "Public Key",
-						"type"  => "text",
-						"name"  => "public_key",
-					),
-					"url"              => array(
-						"label" => "URL",
-						"type"  => "text",
-						"name"  => "url",
-					),
-					"content_per_page" => array(
-						"label" => "Content per page in Syndication",
-						"type"  => "text",
-						"name"  => "content_per_page",
-					)
-				)
+			"parent_page_slug" => 'ae-syndication',
+			"page_title"       => "Settings",
+			"page_menu_title"  => "Settings",
+			"page_slug"        => "ae-options",
+			"page_note"        => "",
+			"options_name"     => "ae_options",
+			"options_group"    => "ae_options_group",
+			"options"          => array(
+				"agency_id"        => array(
+					"label" => "Agency ID",
+					"name"  => "agency_id",
+					"type"  => "text",
+					//						"description" => "Agency ID which",
+				),
+				"secret_key"       => array(
+					"label" => "Secret Key",
+					"type"  => "text",
+					"name"  => "secret_key",
+				),
+				"public_key"       => array(
+					"label" => "Public Key",
+					"type"  => "text",
+					"name"  => "public_key",
+				),
+				"url"              => array(
+					"label" => "URL",
+					"type"  => "text",
+					"name"  => "url",
+				),
+				"content_per_page" => array(
+					"label" => "Content per page in Syndication",
+					"type"  => "text",
+					"name"  => "content_per_page",
+				),
+				"html_strip_empty" => array(
+					'label' => 'HTML | Strip empty tags',
+					'type' => "checkbox",
+					"name" => 'strip_empty'
+				),
+				"html_remove_attributes" => array(
+					'label' => 'HTML | Remove attributes',
+					'type' => "checkbox",
+					"name" => 'html_remove_attributes'
+				),
+				"html_strip_tags" => array(
+					'label' => 'HTML | Strip Tags',
+					'type' => "text",
+					"name" => 'html_strip_tags'
+				),
+				"html_skip_iframes" => array(
+					'label' => 'HTML | Skip Iframes',
+					'type' => "checkbox",
+					"name" => 'html_skip_iframes'
+				),
 			)
-		);
+		));
 		//$postStatus = new PostStatus();
 
 		AddMetaBox::create('ae', array(
@@ -100,6 +119,7 @@ class Plugin extends Pattern_Singleton
 			add_action('wp_ajax_pull_from_ae', array($this, 'ajaxPullAction'));
 			add_action('wp_ajax_check_pull_from_ae', array($this, 'ajaxCheckPullAction'));
 			add_action('wp_ajax_check_push_to_ae', array($this, 'ajaxCheckPushAction'));
+			add_action('wp_ajax_delete_from_ae', array($this, 'ajaxDeleteAction'));
 			add_action('wp_ajax_push_to_ae', array($this, 'ajaxPushAction'));
 
 			add_action('add_meta_boxes', array($this, 'addMeta'));
@@ -129,8 +149,10 @@ class Plugin extends Pattern_Singleton
 		$postId = intval($_GET['post']);
 		if (get_post_meta($postId, 'ae_push_status', true)) {
 			$date = get_post_meta($postId, 'ae_timestamp', true);
+
 			return 'Pushed at ' . date('d.m.Y H:i', $date);
 		}
+
 		return '<a href="javascript:void(0);" id="push-to-ae" data-post-id="' . $postId . '">Push to AE</a>';
 	}
 
@@ -145,6 +167,7 @@ class Plugin extends Pattern_Singleton
 				return 'Imported from AE';
 			}
 		}
+
 		return 'Not in AE yet';
 	}
 
@@ -156,12 +179,14 @@ class Plugin extends Pattern_Singleton
 				return date('d.m.Y H:i', $timestamp);
 			}
 		}
+
 		return ' None';
 	}
 
 	public function addColumnHead($defaults)
 	{
 		$defaults['ae'] = 'AE Timestamp';
+
 		return $defaults;
 	}
 
@@ -177,8 +202,10 @@ class Plugin extends Pattern_Singleton
 	 */
 	public function addPages()
 	{
-		add_menu_page('Article Exchange', 'Article Exchange', 'ae', 'ae-syndication',
-			array($this, 'renderSyndication'));
+		add_menu_page('Article Exchange', 'Article Exchange', 'ae', 'ae-syndication', array(
+			$this,
+			'renderSyndication'
+		));
 	}
 
 	public function initTable()
@@ -198,14 +225,15 @@ class Plugin extends Pattern_Singleton
 
 	public function scriptsEnqueue($hook)
 	{
-		wp_enqueue_script('ae-script', plugins_url(WP_AE_PLUGIN_NAME.'/assets/script.js'), array('jquery-ui-dialog'));
+		wp_enqueue_script('ae-script', plugins_url(WP_AE_PLUGIN_NAME . '/assets/script.js'), array('jquery-ui-dialog'));
 		wp_enqueue_style('wp-jquery-ui-dialog');
 
 		/**
 		 * Apply it only on post.php page
 		 */
 		if ('post.php' == $hook || 'ae-options_page_ae-syndication' == $hook) {
-			wp_enqueue_style('ae-style', plugins_url(WP_AE_PLUGIN_NAME.'/assets/style.css'));
+			wp_enqueue_style('ae-style', plugins_url(WP_AE_PLUGIN_NAME . '/assets/style.css'));
+
 			return;
 		}
 	}
@@ -218,8 +246,8 @@ class Plugin extends Pattern_Singleton
 		die(json_encode(array(
 			'state' => 1,
 			'html'  => Renderer::render_template('ajax-popup-pull', array(
-				'properties'    => $nodeInfo['properties'],
-				'assets'        => $nodeInfo['assets'],
+				'properties' => $nodeInfo['properties'],
+				'assets'     => $nodeInfo['assets'],
 			)),
 			'title' => $nodeInfo['properties']['title'],
 			'body'  => tagAuthorFunctional::clearMatches($nodeInfo['properties']['body']),
@@ -256,8 +284,7 @@ class Plugin extends Pattern_Singleton
 				throw new \Exception('No post ID given');
 			}
 
-			PostStatus::init($_REQUEST['post_id'])->pushToAe($_REQUEST['category'], $_REQUEST['audience'],
-				$_REQUEST['images'], ! $_REQUEST['anonymous'], $_REQUEST['editable'], $_REQUEST['references']);
+			PostStatus::init($_REQUEST['post_id'])->pushToAe($_REQUEST['category'], $_REQUEST['audience'], $_REQUEST['images'], ! $_REQUEST['anonymous'], $_REQUEST['editable'], $_REQUEST['references']);
 
 			echo json_encode(array(
 				'state' => 1,
@@ -290,8 +317,35 @@ class Plugin extends Pattern_Singleton
 					'audience'   => empty($dictionaries['audience']) ? array() : $dictionaries['audience'],
 				))
 			));
-		} catch
-		( \Exception $e ) {
+		} catch ( \Exception $e ) {
+			echo json_encode(array(
+				'state'   => 0,
+				'message' => $e->getMessage()
+			));
+		}
+		wp_die();
+	}
+
+	public function ajaxDeleteAction()
+	{
+		try {
+			if (empty($_REQUEST['post_id'])) {
+				throw new \Exception('No post ID given');
+			}
+
+			if (!PostStatus::init($_REQUEST['post_id'])->deleteFromAe())
+			{
+				throw new \Exception('Removing article from A-Exchange failed');
+			}
+			echo json_encode(array(
+				'state' => 1,
+				'text'  => Renderer::render_template('meta', array(
+					'params' => PostStatus::init($_REQUEST['post_id'])->getMetaParams()
+				))
+			));
+
+
+		} catch ( \Exception $e ) {
 			echo json_encode(array(
 				'state'   => 0,
 				'message' => $e->getMessage()
