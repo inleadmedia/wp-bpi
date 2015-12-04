@@ -118,12 +118,12 @@ class SyndicationTable extends \WP_List_Table
 	function get_columns()
 	{
 		return array(
-			'title'       => 'Title',
-			'pushed'      => 'Date',
-			'agency_name' => 'Agency',
-			'category'    => 'Category',
-			'_details'    => 'Details',
-			'_actions'    => 'Actions'
+			'title'       => __('Title', 'wp-ae-plugin'),
+			'pushed'      => __('Date', 'wp-ae-plugin'),
+			'agency_name' => __('Agency', 'wp-ae-plugin'),
+			'category'    => __('Category', 'wp-ae-plugin'),
+			'_details'    => __('Details', 'wp-ae-plugin'),
+			'_actions'    => __('Actions', 'wp-ae-plugin')
 		);
 	}
 
@@ -225,18 +225,18 @@ class SyndicationTable extends \WP_List_Table
 						break;
 					case '_actions':
 						$value = ($postStatus = PostStatus::findByAeId($properties['id'])) ?
-							'Already pulled. <a href="' . get_admin_url(null,
-								'post.php?action=edit&post=' . $postStatus->getPostObject()->ID) . '">Check</a>' :
-							'<a href="javascript:void(0);" data-node-id="' . $properties['id'] . '" class="pull_from_ae">Pull</a>';
+							__('Already pulled', 'wp-ae-plugin').'. <a href="' . get_admin_url(null,
+								'post.php?action=edit&post=' . $postStatus->getPostObject()->ID) . '">'.__('Check', 'wp-ae-plugin').'</a>' :
+							'<a href="javascript:void(0);" data-node-id="' . $properties['id'] . '" class="pull_from_ae">'.__('Pull', 'wp-ae-plugin').'</a>';
 						break;
 					case
 					'_details':
 						$value =
-							'Author: <a href="' . $this->_buildUrl('filter-author',
+							__('Author', 'wp-ae-plugin').': <a href="' . $this->_buildUrl('filter-author',
 								$properties['author']) . '">' . $properties['author'] . '</a><br/>' .
-							'Audience: <strong>' . $properties['audience'] . '</strong><br/>' .
-							'Editable: <strong>' . ($properties['editable'] ? 'Yes' : 'No') . '</strong><br/>' .
-							'With photos: <strong>' . (count($assets) ? 'Yes' : 'No') . '</strong><br/>';
+							__('Audience', 'wp-ae-plugin').': <strong>' . $properties['audience'] . '</strong><br/>' .
+							__('Editable', 'wp-ae-plugin').': <strong>' . ($properties['editable'] ? __('Yes', 'wp-ae-plugin') : __('No', 'wp-ae-plugin')) . '</strong><br/>' .
+							__('With photos', 'wp-ae-plugin').': <strong>' . (count($assets) ? __('Yes', 'wp-ae-plugin') : __('No', 'wp-ae-plugin')) . '</strong><br/>';
 						break;
 					case 'agency_name':
 						$value = '<a href="' . $this->_buildUrl('filter-agency-id',

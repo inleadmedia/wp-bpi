@@ -34,7 +34,7 @@ class PostStatus
 	protected function __construct($postId)
 	{
 		if ( ! ($this->_postData = get_post($postId))) {
-			throw new \Exception('No post with ID=' . $postId . ' found');
+			throw new \Exception(sprintf( __( 'No post with ID = %d found', 'wp-ae-plugin' ), $postId));
 		}
 		$this->_postId = $postId;
 	}
@@ -81,7 +81,7 @@ class PostStatus
 	public function getTableState()
 	{
 		if ($this->_checkAe()) {
-			return 'Already pulled. <a href="' . get_admin_url(null, 'post.php?action=edit&post=' . $this->_postId) . '">Check</a>';
+			return sprintf(__('Already pulled. %s','wp-ae-plugin'), '<a href="' . get_admin_url(null, 'post.php?action=edit&post=' . $this->_postId) . '">'.__('Check', 'wp-ae-plugin').'</a>');
 		}
 
 		return '';
@@ -97,24 +97,24 @@ class PostStatus
 			'export' => $this->_postId
 		);
 		if ( ! $this->_checkAe()) {
-			$params['AE Status'] = 'Not in AE';
+			$params['AE Status'] = __('Not in AE', 'wp-ae-plugin');
 
 			return $params;
 		}
 		if ($this->_aeMeta['ae_push_status']) {
 			$params['delete'] = $this->_postId;
 		}
-		$params['AE Status'] = 'In AE';
-		$params['AE ID']     = $this->_aeMeta['ae_id'];
-		if (($params['Pull status'] = (int) $this->_aeMeta['ae_pull_status'])) {
-			$params['Pull date'] = date('d.m.Y H:i', $this->_aeMeta['ae_pull_timestamp']);
+		$params[__('AE Status', 'wp-ae-plugin')] = __('In AE', 'wp-ae-plugin');
+		$params[__('AE ID', 'wp-ae-plugin')]     = $this->_aeMeta['ae_id'];
+		if (($params[__('Pull status', 'wp-ae-plugin')] = (int) $this->_aeMeta['ae_pull_status'])) {
+			$params[__('Pull date', 'wp-ae-plugin')] = date('d.m.Y H:i', $this->_aeMeta['ae_pull_timestamp']);
 		}
-		if (($params['Push status'] = (int) $this->_aeMeta['ae_push_status'])) {
-			$params['Push date'] = date('d.m.Y H:i', $this->_aeMeta['ae_push_timestamp']);
+		if (($params[__('Push status', 'wp-ae-plugin')] = (int) $this->_aeMeta['ae_push_status'])) {
+			$params[__('Push date', 'wp-ae-plugin')] = date('d.m.Y H:i', $this->_aeMeta['ae_push_timestamp']);
 			unset($params['export']);
 		}
-		$params['AE Category'] = $this->_aeMeta['ae_category'];
-		$params['AE Audience'] = $this->_aeMeta['ae_audience'];
+		$params[__('AE Category', 'wp-ae-plugin')] = $this->_aeMeta['ae_category'];
+		$params[__('AE Audience', 'wp-ae-plugin')] = $this->_aeMeta['ae_audience'];
 
 		return $params;
 	}
@@ -130,10 +130,10 @@ class PostStatus
 		}
 		$response = '';
 		if ($this->_aeMeta['ae_pull_status']) {
-			$response .= 'Pulled at ' . date('d.m.Y H:i', $this->_aeMeta['ae_pull_timestamp']);
+			$response .= sprintf(__('Pulled at %s', 'wp-ae-plugin') . date('d.m.Y H:i', $this->_aeMeta['ae_pull_timestamp']));
 		}
 		if ($this->_aeMeta['ae_push_status']) {
-			$response .= ($response ? '<br/>' : '') . 'Pushed at ' . date('d.m.Y H:i', $this->_aeMeta['ae_push_timestamp']);
+			$response .= ($response ? '<br/>' : '') . sprintf(__('Pushed at %s', 'wp-ae-plugin'),  date('d.m.Y H:i', $this->_aeMeta['ae_push_timestamp']));
 		}
 
 		return $response;

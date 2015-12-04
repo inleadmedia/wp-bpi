@@ -117,11 +117,11 @@ class wpJediOptions
 			<?php if ($_GET['settings-updated']) { ?>
 				<?php if ($_GET['settings-updated'] == 'true') { ?>
 					<div id="setting-error-settings_updated" class="updated settings-error">
-						<p><strong>Changes Saved</strong></p>
+						<p><strong><?php _('Changes Saved', 'wp-ae-plugin') ?></strong></p>
 					</div>
 				<?php } else { ?>
 					<div id="setting-error-settings_updated" class="error settings-error">
-						<p><strong>Error while saving.</strong></p>
+						<p><strong><?php _('Error while saving', 'wp-ae-plugin') ?></strong></p>
 					</div>
 				<?php } ?>
 			<?php } ?>
@@ -326,7 +326,6 @@ class wpJediOptions
 		$content = $this->options[$data['name'].$data['language']];
 		$ed_args = array(
 			"textarea_rows" => 5,
-			"textarea_name" => $name,
 			"editor_class" => "jedi_richtext",
 			"media_buttons" => false,
 			"textarea_name" => $this->options_name.'['.$data['name'].$data['language'].']');

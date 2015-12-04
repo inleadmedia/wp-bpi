@@ -8,12 +8,12 @@
 ?>
 <div id="info-popup">
 	<div>
-		You're about to syndicate content “<?php echo $properties['title'] ?>” av
-		<strong><?php echo $properties['author'] ?></strong>, from category “<?php echo $properties['category'] ?>” and
-		audience “<?php echo $properties['audience'] ?>”
+		<?php _( "You're about to syndicate content", 'wp-ae-plugin')?> “<?php echo $properties['title'] ?>” <?php _( "av", 'wp-ae-plugin')?>
+		<strong><?php echo $properties['author'] ?></strong>, <?php _( "from category", 'wp-ae-plugin')?> “<?php echo $properties['category'] ?>” and
+		<?php _( "audience", 'wp-ae-plugin')?> “<?php echo $properties['audience'] ?>”
 	</div>
 	<?php if ($assets): ?>
-		<br/><div><strong>Select images to syndicate with content:</strong></div>
+		<br/><div><strong><?php _( "Select images to syndicate with content:", 'wp-ae-plugin')?></strong></div>
 		<ul>
 			<?php foreach ($assets as $num => $image): ?>
 				<li><input type="checkbox" class="selected-images" id="image-<?php echo $num ?>" name="image-<?php echo $num ?>" value="<?php echo $image ?>"/>
@@ -22,6 +22,6 @@
 			<?php endforeach ?>
 		</ul>
 	<?php else: ?>
-		<div><strong>There is no images</strong></div>
+		<div><strong><?php _( "There is no images", 'wp-ae-plugin')?></strong></div>
 	<?php endif ?>
 </div>
