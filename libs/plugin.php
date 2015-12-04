@@ -210,6 +210,10 @@ class Plugin extends Pattern_Singleton
 
 	public function initTable()
 	{
+		if (empty($_REQUEST['page']) || $_REQUEST['page'] == 'ae-syndication')
+		{
+			return;
+		}
 		$this->_table = new SyndicationTable();
 	}
 
