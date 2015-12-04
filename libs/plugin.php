@@ -247,7 +247,7 @@ class Plugin extends Pattern_Singleton
 	{
 		$nodeInfo = Pull::init()->getNodeInfo($_GET['ae-node-id']);
 
-		die(json_encode(array(
+		wp_send_json(array(
 			'state' => 1,
 			'html'  => Renderer::render_template('ajax-popup-pull', array(
 				'properties' => $nodeInfo['properties'],
@@ -255,7 +255,7 @@ class Plugin extends Pattern_Singleton
 			)),
 			'title' => $nodeInfo['properties']['title'],
 			'body'  => tagAuthorFunctional::clearMatches($nodeInfo['properties']['body']),
-		)));
+		));
 	}
 
 	/**
@@ -271,14 +271,14 @@ class Plugin extends Pattern_Singleton
 		 */
 		$postStatus = Pull::init()->insertPost($aeNodeId, $images);
 
-		die(json_encode(array(
+		wp_send_json(array(
 			'state'       => 1,
 			'text'        => '<div>' . $postStatus->getTableState() . '</div>',
 			'field'       => $postStatus->getTableState(),
 			'id'          => 'record_' . $aeNodeId,
 			'column_name' => '_actions'
 
-		)));
+		));
 	}
 
 	public function ajaxPushAction()
@@ -290,7 +290,7 @@ class Plugin extends Pattern_Singleton
 
 			PostStatus::init($_REQUEST['post_id'])->pushToAe($_REQUEST['category'], $_REQUEST['audience'], $_REQUEST['images'], ! $_REQUEST['anonymous'], $_REQUEST['editable'], $_REQUEST['references']);
 
-			echo json_encode(array(
+			wp_send_json(array(
 				'state' => 1,
 				'text'  => Renderer::render_template('meta', array(
 					'params' => PostStatus::init($_REQUEST['post_id'])->getMetaParams()
@@ -298,12 +298,11 @@ class Plugin extends Pattern_Singleton
 			));
 
 		} catch ( \Exception $e ) {
-			echo json_encode(array(
+			wp_send_json(array(
 				'state'   => 0,
 				'message' => $e->getMessage()
 			));
 		}
-		wp_die();
 	}
 
 	public function ajaxCheckPushAction()
@@ -313,7 +312,7 @@ class Plugin extends Pattern_Singleton
 				throw new \Exception('No post ID given');
 			}
 			$dictionaries = ArticleExchange::init()->getDictionaries();
-			echo json_encode(array(
+			wp_send_json(array(
 				'state' => 1,
 				'html'  => Renderer::render_template('ajax-popup-push', array(
 					'postStatus' => PostStatus::init($_REQUEST['post_id']),
@@ -322,12 +321,11 @@ class Plugin extends Pattern_Singleton
 				))
 			));
 		} catch ( \Exception $e ) {
-			echo json_encode(array(
+			wp_send_json(array(
 				'state'   => 0,
 				'message' => $e->getMessage()
 			));
 		}
-		wp_die();
 	}
 
 	public function ajaxDeleteAction()
@@ -341,7 +339,7 @@ class Plugin extends Pattern_Singleton
 			{
 				throw new \Exception('Removing article from A-Exchange failed');
 			}
-			echo json_encode(array(
+			wp_send_json(array(
 				'state' => 1,
 				'text'  => Renderer::render_template('meta', array(
 					'params' => PostStatus::init($_REQUEST['post_id'])->getMetaParams()
@@ -350,11 +348,10 @@ class Plugin extends Pattern_Singleton
 
 
 		} catch ( \Exception $e ) {
-			echo json_encode(array(
+			wp_send_json(array(
 				'state'   => 0,
 				'message' => $e->getMessage()
 			));
 		}
-		wp_die();
 	}
 }
