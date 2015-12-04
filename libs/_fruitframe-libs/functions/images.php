@@ -29,7 +29,7 @@ function fruitframe_parse_first_image($content = NULL)
 }
 
 /**
- * Находит изображение в переданной строке
+ * Search for image in transmitted text
  *
  * @param string $content
  *

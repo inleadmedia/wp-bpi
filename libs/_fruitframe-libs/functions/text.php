@@ -198,10 +198,9 @@ function fruitframe_hide_email($email)
 }
 
 /**
- * Функция очищает суммы, переданные в неверном формате — с пробелами, а также форматирует их в правильном виде
- * @todo: добавить мультиязычность
+ * Clean and format float summ values from text
  * @param string $summ
- * @param integer $decimals количество символов после запятой
+ * @param integer $decimals number of digits after decimal point
  */
 function fruitframe_format_summ($summ, $decimals = 2)
 {
