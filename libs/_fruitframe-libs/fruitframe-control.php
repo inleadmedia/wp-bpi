@@ -3,7 +3,7 @@
 namespace Fruitframe;
 
 /**
- * Класс отрисовки разных управляющих элементов с возможностью темизации
+ * Rendering of controls with theming ability
  */
 class Control
 {
@@ -36,7 +36,6 @@ class Control
 	}
 
 	/**
-	 * Установка внешнего вида отрисовываемых элементов
 	 * @param string $headerBefore
 	 * @param string $headerAfter
 	 * @param string $footer

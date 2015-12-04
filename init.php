@@ -12,9 +12,9 @@ if ( ! class_exists('WP_List_Table'))
 
 
 /**
- * Функция подключения файлов из директории, в том числе и рекурсивно
- * @param $path Путь, по которому будут подключаться файлы
- * @param bool $recursive Параметр рекурсивного прохода — с ним будут проверятся найденные в пути директории
+ * Recursive directory require functions
+ * @param $path File Path
+ * @param bool $recursive Should we check each dir and require its files
  */
 function requireFiles($path, $recursive = FALSE)
 {

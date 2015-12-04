@@ -34,7 +34,7 @@ class Renderer
 	}
 
 	/**
-	 * Показ блока из папки _parts
+	 * Show template from _parts folder
 	 *
 	 * @param string $slug
 	 * @param string $name
