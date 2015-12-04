@@ -11,11 +11,16 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 
 	protected function __construct()
 	{
-		if (intval(\wpJediOptions::get_option('ae_options', 'content_per_page')) > 0) {
+		if (intval(\wpJediOptions::get_option('ae_options', 'content_per_page')) > 0)
+		{
 			$this->_amountPerPage = intval(\wpJediOptions::get_option('ae_options', 'content_per_page'));
 		}
-		$this->_ae = new \Bpi
-		(\wpJediOptions::get_option('ae_options', 'url'), \wpJediOptions::get_option('ae_options', 'agency_id'), \wpJediOptions::get_option('ae_options', 'public_key'), \wpJediOptions::get_option('ae_options', 'secret_key'));
+		$this->_ae = new \Bpi(
+			\wpJediOptions::get_option('ae_options', 'url'),
+			\wpJediOptions::get_option('ae_options', 'agency_id'),
+			\wpJediOptions::get_option('ae_options', 'public_key'),
+			\wpJediOptions::get_option('ae_options', 'secret_key')
+		);
 	}
 
 	/**
@@ -43,119 +48,14 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 		);
 
 		return $this->_ae->searchNodes(array(
-				'amount' => $this->_amountPerPage,
-				'offset' => $offset,
-				'filter' => $filters,
-				'sort'   => array(
-					$sort_by => $sort,
-				),
-				'search' => $search,
-			));
-		/**
-		 * Parses the BPI search result into more simpler structures.
-		 *
-		 * @return array
-		 *   Array of bpi fetched items, in structure:
-		 *   - bpi_id: bpi identifier
-		 *   - title: item title
-		 *   - date: item creation date in the BPI system
-		 *   - teaser: content teaser
-		 *   - body: content body
-		 *   - author: content author
-		 *   - category: content category
-		 *   - agency: content agency
-		 *   - audience: content audience
-		 *   - total_count: overall amount of items in the result
-		 *   - assets: array of links representing the images content
-		 *
-		 * function bpi_search_get_items() {
-		 * $params = _bpi_build_query();
-		 * $phrase = isset($params[BPI_SEARCH_PHRASE_KEY]) ? $params[BPI_SEARCH_PHRASE_KEY] : '';
-		 * $page = pager_find_page();
-		 * $sort = isset($_GET['sort']) ? $_GET['sort'] : BPI_SORT_DESCENDING;
-		 * $filters = array(
-		 * 'category' => isset($params['category']) ? $params['category'] : '',
-		 * 'audience' => isset($params['audience']) ? $params['audience'] : '',
-		 * 'agency_id' => isset($params['agency']) ? $params['agency'] : '',
-		 * 'author' => isset($params['author']) ? $params['author'] : '',
-		 * );
-		 *
-		 * $response = bpi_search_content($phrase, $page, $filters, $sort);
-		 * $bpi_nodes = array();
-		 *
-		 * // Get agency_id=>agency cache.
-		 * $agency_cache = array();
-		 * $cache = cache_get(BPI_AGENCY_CACHE);
-		 * if ($cache) {
-		 * $agency_cache = $cache->data;
-		 * }
-		 *
-		 * foreach ($response as $item) {
-		 * /* @var $item \Bpi\Sdk\Item\Node *
-		 * $current_item = $item->getProperties();
-		 * $assets = $item->getAssets();
-		 *
-		 * $agency = isset($current_item['agency_name']) ? $current_item['agency_name'] : '';
-		 * $agency_id = isset($current_item['agency_id']) ? $current_item['agency_id'] : '';
-		 *
-		 * // Set agency into cache.
-		 * if (!empty($agency) && empty($agency_cache[$agency_id])) {
-		 * $agency_cache[$agency_id] = $agency;
-		 * }
-		 *
-		 * // Transform \Bpi\Sdk\Document properties items into array.
-		 * $bpi_nodes[] = array(
-		 * 'bpi_id' => isset($current_item['id']) ? $current_item['id'] : '',
-		 * 'title' => isset($current_item['title']) ? $current_item['title'] : '',
-		 * 'date' => isset($current_item['pushed']) ? $current_item['pushed'] : '',
-		 * 'teaser' => isset($current_item['teaser']) ? $current_item['teaser'] : '',
-		 * 'body' => isset($current_item['body']) ? $current_item['body'] : '',
-		 * 'author' => isset($current_item['author']) ? $current_item['author'] : '',
-		 * 'category' => isset($current_item['category']) ? $current_item['category'] : '',
-		 * 'agency' => $agency,
-		 * 'agency_id' => $agency_id,
-		 * 'audience' => isset($current_item['audience']) ? $current_item['audience'] : '',
-		 * 'total_count' => isset($response->total) ? $response->total : 0,
-		 * 'assets' => (count($assets) > 0) ? $assets : array(),
-		 * 'editable' => !empty($current_item['editable']),
-		 *
-		 *
-		 *
-		 *
-		 *
-		 * function bpi_error_message($exception, $level) {
-		 * // Build message based on error code.
-		 * $c = $exception->getCode();
-		 * switch ($exception->getCode()) {
-		 * case 422:
-		 * $msg = t('Similar resource allready exists in the BPI service.');
-		 * break;
-		 *
-		 * case 406:
-		 * $msg = t('Trying to syndicate content by owner who already did that is not allowed.');
-		 * break;
-		 *
-		 * case 500;
-		 * $msg = t('Internal server error. Please try once more or contact your site administrator.');
-		 * break;
-		 *
-		 * default:
-		 * $msg = t('Error occurred when pushing content to the BPI data well. Check reports for more information.');
-		 * break;
-		 * }
-		 *
-		 *
-		 *
-		 * );
-		 * }
-		 *
-		 * // Save changes in agency cache.
-		 * if (empty($cache) || (!empty($cache) && $agency_cache != $cache->data)) {
-		 * cache_set(BPI_AGENCY_CACHE, $agency_cache);
-		 * }
-		 *
-		 * return $bpi_nodes;
-		 * }*/
+			'amount' => $this->_amountPerPage,
+			'offset' => $offset,
+			'filter' => $filters,
+			'sort'   => array(
+				$sort_by => $sort,
+			),
+			'search' => $search,
+		));
 	}
 
 	public function getDictionaries()
@@ -170,9 +70,11 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 
 	public function getNode($aeNodeId)
 	{
-		try {
+		try
+		{
 			return $this->_ae->getNode($aeNodeId);
-		} catch ( \Exception $exception ) {
+		} catch ( \Exception $exception )
+		{
 			//Somehow save errors
 			return null;
 		}
@@ -182,7 +84,8 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 	{
 		$push_result = $this->_ae->push($aeNode)->getProperties();
 
-		if (empty($push_result['id'])) {
+		if (empty($push_result['id']))
+		{
 			return false;
 		}
 
@@ -191,9 +94,11 @@ class ArticleExchange extends \Fruitframe\Pattern_Singleton
 
 	public function deleteNode($aeNodeId)
 	{
-		try {
+		try
+		{
 			return $this->_ae->deleteNode($aeNodeId);
-		} catch ( \Exception $exception ) {
+		} catch ( \Exception $exception )
+		{
 			return null;
 		}
 	}
