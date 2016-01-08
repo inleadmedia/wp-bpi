@@ -117,11 +117,11 @@ class wpJediOptions
 			<?php if ($_GET['settings-updated']) { ?>
 				<?php if ($_GET['settings-updated'] == 'true') { ?>
 					<div id="setting-error-settings_updated" class="updated settings-error">
-						<p><strong><?php _('Changes Saved', 'wp-ae-plugin') ?></strong></p>
+						<p><strong><?php _e('Changes Saved', 'wp-ae-plugin') ?></strong></p>
 					</div>
 				<?php } else { ?>
 					<div id="setting-error-settings_updated" class="error settings-error">
-						<p><strong><?php _('Error while saving', 'wp-ae-plugin') ?></strong></p>
+						<p><strong><?php _e('Error while saving', 'wp-ae-plugin') ?></strong></p>
 					</div>
 				<?php } ?>
 			<?php } ?>

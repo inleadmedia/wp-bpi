@@ -3,7 +3,7 @@
  * Plugin Name: Article Exchange
  * Plugin URI: http://fruitware.ru
  * Description: AE System Integration Plugin
- * Version: 0.0.1
+ * Version: 1.0.1
  * Author: Fruitware
  * Author URI: http://fruitware.ru
  * Text Domain: ae

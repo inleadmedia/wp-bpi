@@ -9,25 +9,25 @@
  * @var $additionalParams
  */
 ?>
-<h2><?php _("Article Exchange Library", 'wp-ae-plugin') ?></h2>
+<h2><?php _e("Article Exchange Library", 'wp-ae-plugin') ?></h2>
 <div class="alignleft actions">
 	<form>
 		<?php foreach ($additionalParams as $paramName => $paramValue): ?>
 			<input type="hidden" name="<?php echo $paramName ?>" value="<?php echo $paramValue ?>"/>
 		<?php endforeach ?>
 
-		<label for="filter-by-category" class="screen-reader-text"><?php _("Filter by category", 'wp-ae-plugin') ?></label>
+		<label for="filter-by-category" class="screen-reader-text"><?php _e("Filter by category", 'wp-ae-plugin') ?></label>
 
 		<select name="filter-category" id="filter-by-category">
-			<option value="0"><?php _("All categories", 'wp-ae-plugin') ?></option>
+			<option value="0"><?php _e("All categories", 'wp-ae-plugin') ?></option>
 			<?php foreach ($categories as $item): ?>
 				<option <?php echo($item == $selectedCategory ? 'selected="selected"' : '') ?>
 					value="<?php echo $item ?>"><?php echo $item ?></option>
 			<?php endforeach ?>
 		</select>
-		<label for="filter-by-audience" class="screen-reader-text"><?php _("Filter by date", 'wp-ae-plugin') ?></label>
+		<label for="filter-by-audience" class="screen-reader-text"><?php _e("Filter by date", 'wp-ae-plugin') ?></label>
 		<select name="filter-audience" id="filter-by-audience">
-			<option selected="selected" value="0"><?php _("Any audience", 'wp-ae-plugin') ?></option>
+			<option selected="selected" value="0"><?php _e("Any audience", 'wp-ae-plugin') ?></option>
 			<?php foreach ($audience as $item): ?>
 				<option
 					<?php echo($item == $selectedAudience ? 'selected="selected"' : '') ?>value="<?php echo $item ?>"><?php echo $item ?></option>
@@ -35,7 +35,7 @@
 		</select>
 
 		<p class="search-box ae-style">
-			<label class="screen-reader-text" for="post-search-input"><?php _("Search", 'wp-ae-plugin') ?>:</label>
+			<label class="screen-reader-text" for="post-search-input"><?php _e("Search", 'wp-ae-plugin') ?>:</label>
 			<input type="search" id="post-search-input" name="filter-search" value="<?php echo $searchText ?>">
 		</p>
 

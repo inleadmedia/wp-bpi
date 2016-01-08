@@ -20,5 +20,5 @@ Wordpress Article Exchange is the perfect solution for any wordpress website whi
 * Find and import content to your blog (with or without images)
 * Field-mapping to improve use-ability
 
-= 0.0.1 =
+= 1.0.1 =
 * Wordpress AE Plugin
